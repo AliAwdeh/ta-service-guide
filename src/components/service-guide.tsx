@@ -1,0 +1,707 @@
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+
+import {
+  ENTRY_PERMIT_FEES,
+  aed,
+  entryPermitFeeFor,
+  fill,
+  hasDepositRefund,
+  makeTerms,
+  type Emirate,
+  type Terms,
+  type VariantConfig,
+} from "../lib/guide-config";
+import {
+  GUARANTEE,
+  INTRO_LEAD,
+  OUTRO,
+  contentFor,
+  type Bullet,
+  type Callout,
+  type IconName,
+  type Stage,
+} from "../lib/guide-content";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SERVICE GUIDE — shared, variant-driven component
+   ─────────────────────────────────────────────────────────────────────────
+   Renders any of the 14 service guides. Everything it draws comes from two
+   places and nothing else:
+
+     • lib/guide-content.ts — the stages, callouts and copy for each guide
+     • VariantConfig        — which guide, plus role/gender (pronouns) and the
+                              sponsor's emirate (the Filipina entry permit fee)
+
+   So a wording change is a content edit, and a new guide is a new content
+   entry — neither touches this file.
+
+   Design system carried over from maid-visa-guide so a client who receives both
+   documents sees one brand:
+     blue #4878BC · orange #F6891E · green #15B886 / #0A7C5A
+     dark #111827 · gray #6B7280 / #374151 · wash #EEF3FB · #B9CCE6 / #E5E7EB
+   Mobile-first, system sans, no webfont — these open inside WhatsApp's in-app
+   browser on mobile data.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ---------------------------------- icons --------------------------------- */
+
+type IconProps = { className?: string };
+
+function Icon({ children, className }: IconProps & { children: ReactNode }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      {children}
+    </svg>
+  );
+}
+
+const IcShield = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+    <path d="m9 12 2 2 4-4" />
+  </Icon>
+);
+const IcDoc = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+    <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+    <path d="m9 15 2 2 4-4" />
+  </Icon>
+);
+const IcPlane = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M17.8 19.2 16 11l3.5-3.5a2.12 2.12 0 0 0-3-3L13 8 4.8 6.2a1 1 0 0 0-.9 1.7L8 11l-2 5-2.5.5a1 1 0 0 0-.2 1.9l4.2 1.2 1.2 4.2a1 1 0 0 0 1.9-.2L11 21l5-2 3.1 4.1a1 1 0 0 0 1.7-.9Z" />
+  </Icon>
+);
+const IcClock = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3 2" />
+  </Icon>
+);
+const IcShip = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M2 13h20l-2 7H4l-2-7Z" />
+    <path d="M5 13V6a1 1 0 0 1 1-1h8l4 4v4" />
+    <path d="M12 5V2" />
+  </Icon>
+);
+const IcTraining = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 3 2 8l10 5 10-5-10-5Z" />
+    <path d="M6 10.5V17c0 1.7 2.7 3 6 3s6-1.3 6-3v-6.5" />
+  </Icon>
+);
+const IcStamp = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M5 21h14" />
+    <path d="M6 18h12v-2a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v2Z" />
+    <path d="M10 14V9a2 2 0 0 1 4 0v5" />
+  </Icon>
+);
+const IcPermit = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="2" y="5" width="20" height="14" rx="2" />
+    <circle cx="8" cy="12" r="2.5" />
+    <path d="M14 10h4M14 14h4" />
+  </Icon>
+);
+const IcRefresh = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+    <path d="M21 3v5h-5" />
+    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+    <path d="M3 21v-5h5" />
+  </Icon>
+);
+const IcCheck = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="m8.5 12.5 2.5 2.5 4.5-5" />
+  </Icon>
+);
+const IcMoney = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="2" y="6" width="20" height="12" rx="2" />
+    <circle cx="12" cy="12" r="2.5" />
+    <path d="M6 12h.01M18 12h.01" />
+  </Icon>
+);
+const IcBuilding = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="4" y="3" width="16" height="18" rx="1.5" />
+    <path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2" />
+  </Icon>
+);
+const IcMedical = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+  </Icon>
+);
+const IcChevron = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="m6 9 6 6 6-6" />
+  </Icon>
+);
+
+const ICONS: Record<IconName, (p: IconProps) => ReactNode> = {
+  shield: IcShield,
+  doc: IcDoc,
+  plane: IcPlane,
+  clock: IcClock,
+  ship: IcShip,
+  training: IcTraining,
+  stamp: IcStamp,
+  permit: IcPermit,
+  refresh: IcRefresh,
+  check: IcCheck,
+  money: IcMoney,
+  building: IcBuilding,
+  medical: IcMedical,
+};
+
+/* ------------------------------- rich text -------------------------------- */
+
+/**
+ * Interpolate {placeholders} from the terms vocabulary, then render the source
+ * document's `**bold**` emphasis as <strong>. Split on the delimiter rather than
+ * parsing markdown — the content is ours, and the only markup it uses is bold.
+ */
+function Rich({ text, t }: { text: string; t: Terms }) {
+  const filled = fill(text, t);
+  const parts = filled.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.startsWith("**") && part.endsWith("**") && part.length > 4 ? (
+          <strong key={i} className="font-bold text-[#111827]">
+            {part.slice(2, -2)}
+          </strong>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
+
+/* ------------------------------- primitives ------------------------------- */
+
+/** Numbered circle on the process timeline. Colors alternate blue/orange. */
+function StageBadge({ n, icon, color }: { n: number; icon: IconName; color: "blue" | "orange" }) {
+  const I = ICONS[icon] ?? IcDoc;
+  const bg = color === "orange" ? "bg-[#F6891E]" : "bg-[#4878BC]";
+  return (
+    <div className="relative z-10 shrink-0">
+      <div
+        className={`${bg} flex h-12 w-12 items-center justify-center rounded-full text-white shadow-md ring-4 ring-white`}
+      >
+        <I className="h-5 w-5" />
+      </div>
+      <div className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-[#B9CCE6] bg-white text-[11px] font-bold text-[#4878BC]">
+        {n}
+      </div>
+    </div>
+  );
+}
+
+/** A timeline row carrying its own connector, hidden on the last row so the
+    line ends cleanly at the final bubble instead of trailing past it. */
+function TimelineRow({
+  badge,
+  last,
+  children,
+}: {
+  badge: ReactNode;
+  last: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex gap-3 sm:gap-4">
+      <div className="flex flex-col items-center self-stretch">
+        {badge}
+        {last ? null : <div className="mt-1 w-0.5 flex-1 rounded bg-[#4878BC]/45" />}
+      </div>
+      <div className={`min-w-0 flex-1 ${last ? "pb-0" : "pb-10"}`}>{children}</div>
+    </div>
+  );
+}
+
+/** Each major part of the page is its own card so they read as separate sections. */
+function SectionCard({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <section
+      id={id}
+      className="scroll-mt-24 rounded-3xl border border-[#B9CCE6]/70 bg-white p-4 shadow-[0_10px_30px_-18px_rgba(72,120,188,0.45)] sm:p-7"
+    >
+      <h2 className="text-[24px] font-extrabold text-[#4878BC]">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+/* Justified only from sm up. These paragraphs are long and the phone column is
+   ~330px wide, where justification opens rivers between words; left-aligned
+   stays readable there and the editorial feel is kept on wider screens. */
+function Paragraph({ text, t }: { text: string; t: Terms }) {
+  return (
+    <p className="mt-2 text-[15px] leading-relaxed sm:text-justify text-[#374151]">
+      <Rich text={text} t={t} />
+    </p>
+  );
+}
+
+function BulletList({ items, t }: { items: (string | Bullet)[]; t: Terms }) {
+  return (
+    <ul className="mt-2.5 space-y-2">
+      {items.map((raw, i) => {
+        const item: Bullet = typeof raw === "string" ? { text: raw } : raw;
+        return (
+          <li key={i} className="flex gap-2.5">
+            <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#4878BC]" />
+            <div className="min-w-0 flex-1">
+              <span className="text-[15px] leading-relaxed text-[#374151]">
+                <Rich text={item.text} t={t} />
+              </span>
+              {item.sub?.length ? (
+                <ul className="mt-1.5 space-y-1">
+                  {item.sub.map((s, j) => (
+                    <li key={j} className="flex gap-2">
+                      <span className="mt-[9px] h-1 w-1 shrink-0 rounded-full bg-[#6B7280]" />
+                      <span className="text-[14px] leading-relaxed text-[#6B7280]">
+                        <Rich text={s} t={t} />
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/* -------------------------------- callouts -------------------------------- */
+
+const CALLOUT_STYLE: Record<Callout["tone"], { box: string; chip: string; icon: IconName }> = {
+  documents: {
+    box: "border-[#B9CCE6] bg-[#EEF3FB]",
+    chip: "bg-[#4878BC]",
+    icon: "doc",
+  },
+  info: {
+    box: "border-[#F6891E]/40 bg-[#FFF6EC]",
+    chip: "bg-[#F6891E]",
+    icon: "shield",
+  },
+  breakdown: {
+    box: "border-[#B9CCE6] bg-white",
+    chip: "bg-[#4878BC]",
+    icon: "clock",
+  },
+};
+
+function CalloutBox({ callout, t }: { callout: Callout; t: Terms }) {
+  const style = CALLOUT_STYLE[callout.tone];
+  const I = ICONS[style.icon] ?? IcDoc;
+  return (
+    <div className={`mt-3.5 overflow-hidden rounded-xl border ${style.box}`}>
+      {callout.title ? (
+        <div className="flex items-start gap-2.5 px-3.5 pt-3.5 sm:px-4">
+          <span
+            className={`${style.chip} flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white`}
+          >
+            <I className="h-3.5 w-3.5" />
+          </span>
+          <h4 className="mt-0.5 text-[14px] leading-snug font-bold text-[#111827]">
+            <Rich text={callout.title} t={t} />
+          </h4>
+        </div>
+      ) : null}
+      <div className="px-3.5 pt-1 pb-3.5 sm:px-4">
+        {callout.body?.map((p, i) => (
+          <p
+            key={i}
+            className={`text-[14px] leading-relaxed sm:text-justify text-[#374151] ${i === 0 && !callout.title ? "" : "mt-2"}`}
+          >
+            <Rich text={p} t={t} />
+          </p>
+        ))}
+
+        {callout.items?.length ? <BulletList items={callout.items} t={t} /> : null}
+
+        {callout.rows?.length ? (
+          <div className="mt-2.5 overflow-hidden rounded-lg bg-white ring-1 ring-[#B9CCE6]/70">
+            {callout.rows.map((row, i) => (
+              <div
+                key={i}
+                className={`flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-3 py-2.5 ${
+                  i === 0 ? "" : "border-t border-[#B9CCE6]/50"
+                }`}
+              >
+                <span className="text-[13px] leading-snug font-semibold text-[#374151]">
+                  <Rich text={row.label} t={t} />
+                </span>
+                {row.value ? (
+                  <span className="text-[13px] font-bold whitespace-nowrap text-[#4878BC]">
+                    <Rich text={row.value} t={t} />
+                  </span>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {callout.note ? (
+          <p className="mt-2.5 flex items-start gap-2 rounded-lg bg-white px-3 py-2.5 text-[13px] leading-relaxed font-semibold text-[#111827] ring-1 ring-[#B9CCE6]/60">
+            <IcShield className="mt-0.5 h-4 w-4 shrink-0 text-[#4878BC]" />
+            <span className="sm:text-justify">
+              <Rich text={callout.note} t={t} />
+            </span>
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------- private entry permit fees ---------------------- */
+
+/**
+ * The Filipina entry permit fee. When the sponsor's emirate is known, that
+ * option is marked as theirs; when it isn't, both are shown side by side
+ * exactly as the source document lists them — never a guessed amount.
+ */
+function FeeBlock({ emirate }: { emirate: Emirate | null }) {
+  const resolved = entryPermitFeeFor(emirate);
+  const isDubai = resolved?.emirate === "dubai";
+  const known = resolved != null;
+
+  return (
+    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <FeeCard
+        title="Dubai-issued Emirates ID"
+        total={ENTRY_PERMIT_FEES.dubai.total}
+        active={known && isDubai}
+        rows={[
+          {
+            label: "Refundable security deposit",
+            value: aed(ENTRY_PERMIT_FEES.dubai.deposit),
+            hint: "refunded after your {role} arrives in the UAE",
+          },
+          {
+            label: "Non-refundable government fees",
+            value: aed(ENTRY_PERMIT_FEES.dubai.government),
+          },
+        ]}
+      />
+      <FeeCard
+        title="All other emirates"
+        total={ENTRY_PERMIT_FEES.other.total}
+        active={known && !isDubai}
+        rows={[
+          {
+            label: "Non-refundable government fees",
+            value: aed(ENTRY_PERMIT_FEES.other.government),
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
+function FeeCard({
+  title,
+  total,
+  rows,
+  active,
+}: {
+  title: string;
+  total: number;
+  rows: { label: string; value: string; hint?: string }[];
+  active: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-xl border p-3.5 ${
+        active
+          ? "border-[#4878BC] bg-[#EEF3FB] ring-2 ring-[#4878BC]/30"
+          : "border-[#E5E7EB] bg-white"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <h4 className="text-[13px] leading-snug font-bold text-[#111827]">{title}</h4>
+        {active ? (
+          <span className="shrink-0 rounded-full bg-[#4878BC] px-2 py-0.5 text-[10px] font-bold text-white">
+            Your file
+          </span>
+        ) : null}
+      </div>
+      <p className="mt-1 text-[22px] font-extrabold text-[#4878BC]">{aed(total)}</p>
+      <ul className="mt-2 space-y-1.5">
+        {rows.map((r, i) => (
+          <li key={i} className="flex items-baseline justify-between gap-2 text-[12px]">
+            <span className="text-[#6B7280]">{r.label}</span>
+            <span className="font-bold whitespace-nowrap text-[#374151]">{r.value}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* --------------------------------- a stage -------------------------------- */
+
+function StageBody({ stage, t, emirate }: { stage: Stage; t: Terms; emirate: Emirate | null }) {
+  const showDeposit = hasDepositRefund(emirate);
+  const callouts = (stage.callouts ?? []).filter((c) => !c.onlyWithDeposit || showDeposit);
+
+  return (
+    <div className="pt-2.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="text-[18px] leading-snug font-bold text-[#111827]">
+          <Rich text={stage.title} t={t} />
+        </h3>
+        {stage.duration ? (
+          <span className="rounded-full bg-[#EEF3FB] px-3 py-1 text-xs font-bold whitespace-nowrap text-[#4878BC]">
+            {stage.duration}
+          </span>
+        ) : null}
+      </div>
+
+      {stage.body?.map((p, i) => (
+        <Paragraph key={i} text={p} t={t} />
+      ))}
+      {stage.bullets?.length ? <BulletList items={stage.bullets} t={t} /> : null}
+      {stage.bodyAfter?.map((p, i) => (
+        <Paragraph key={i} text={p} t={t} />
+      ))}
+      {callouts.map((c, i) => (
+        <CalloutBox key={i} callout={c} t={t} />
+      ))}
+
+      {stage.subsections?.map((sub, i) => (
+        <div key={i} className="mt-5 border-t border-[#E5E7EB] pt-4">
+          <h4 className="text-[15px] font-extrabold text-[#F6891E]">
+            <Rich text={sub.title} t={t} />
+          </h4>
+          {sub.body?.map((p, j) => (
+            <Paragraph key={j} text={p} t={t} />
+          ))}
+          {sub.feeBlock ? <FeeBlock emirate={emirate} /> : null}
+          {sub.callouts?.map((c, j) => (
+            <CalloutBox key={j} callout={c} t={t} />
+          ))}
+        </div>
+      ))}
+
+      {stage.parallel ? (
+        <p className="mt-3 flex items-start gap-2 rounded-lg bg-[#EAF7F1] px-3 py-2.5 text-[13px] leading-relaxed font-semibold text-[#0A7C5A]">
+          <IcRefresh className="mt-0.5 h-4 w-4 shrink-0" />
+          <span className="sm:text-justify">
+            <Rich text={stage.parallel} t={t} />
+          </span>
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/* --------------------------------- the page ------------------------------- */
+
+const SECTIONS = [
+  { id: "process", label: "The Process" },
+  { id: "timeline", label: "Timeline" },
+  { id: "guarantee", label: "Guarantee" },
+] as const;
+
+export function ServiceGuide({ config }: { config: VariantConfig }) {
+  const content = useMemo(() => contentFor(config.serviceGuide), [config.serviceGuide]);
+  const t = useMemo(() => makeTerms(config.role, config.gender), [config.role, config.gender]);
+  const [active, setActive] = useState<string>(SECTIONS[0].id);
+
+  /* keep the wash color under overscroll */
+  useEffect(() => {
+    document.documentElement.style.backgroundColor = "#EEF3FB";
+    document.body.style.backgroundColor = "#EEF3FB";
+  }, []);
+
+  /* scroll-spy for the sticky nav. No run-once ref guard: the effect must
+     re-attach whenever it is cleaned up and re-run (variant `key` remounts,
+     HMR) — a ref surviving that cycle would leave the nav with no observer. */
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) if (e.isIntersecting) setActive(e.target.id);
+      },
+      { rootMargin: "-30% 0px -60% 0px" },
+    );
+    for (const s of SECTIONS) {
+      const el = document.getElementById(s.id);
+      if (el) obs.observe(el);
+    }
+    const firstId = SECTIONS[0].id;
+    const lastId = SECTIONS[SECTIONS.length - 1].id;
+    const onScroll = () => {
+      const nearBottom =
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 24;
+      if (nearBottom) setActive(lastId);
+      /* above the first section nothing intersects the observer band, which
+         would otherwise leave a stale highlight after scrolling back up */
+      const first = document.getElementById(firstId);
+      if (first && first.getBoundingClientRect().top > window.innerHeight * 0.4) {
+        setActive(firstId);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      obs.disconnect();
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
+  const go = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <div className="min-h-screen bg-[#EEF3FB] font-sans text-[#111827] antialiased">
+      {/* hero — maids.cc logo + title + which guide this is */}
+      <header className="bg-white px-5 pt-8 pb-14 shadow-sm">
+        <div className="mx-auto max-w-xl">
+          <img
+            src="/assets/maids-logo.png"
+            alt="maids.cc"
+            className="h-10 w-auto"
+            width={247}
+            height={83}
+          />
+          <h1 className="mt-4 text-[32px] leading-tight font-extrabold text-[#111827]">
+            Your {t.Role} <span className="text-[#4878BC]">Service Guide</span>
+          </h1>
+          <p className="mt-2.5 inline-block rounded-full bg-[#EEF3FB] px-3 py-1 text-[12px] font-bold text-[#4878BC]">
+            {content.label}
+          </p>
+        </div>
+      </header>
+
+      {/* sticky nav — 3 sections, so full labels always fit on a phone */}
+      <nav className="sticky top-0 z-20 -mt-7 px-4">
+        <div className="mx-auto flex max-w-xl gap-1 rounded-2xl border border-[#B9CCE6]/70 bg-white p-1.5 shadow-lg">
+          {SECTIONS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => go(s.id)}
+              className={`flex-auto rounded-xl px-2 py-2.5 text-[12px] font-bold whitespace-nowrap transition-colors duration-200 sm:text-[13px] ${
+                active === s.id
+                  ? "bg-[#4878BC] text-white shadow"
+                  : "text-[#6B7280] hover:bg-[#EEF3FB]"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      <main className="mx-auto max-w-xl space-y-8 px-3 pt-10 pb-12 sm:px-5">
+        {/* opening note — the document's centered italic preamble */}
+        <div className="text-center">
+          <div className="mx-auto h-px w-12 bg-[#B9CCE6]" />
+          <p className="mt-4 text-[15px] leading-relaxed font-semibold text-[#374151] italic">
+            {INTRO_LEAD}
+          </p>
+          <p className="mt-2 text-[15px] leading-relaxed text-[#6B7280] italic">
+            <Rich text={content.introDetail} t={t} />
+          </p>
+        </div>
+
+        {/* ------------------------------ the process ------------------------------ */}
+        <SectionCard id="process" title="The Process">
+          <div className="mt-7">
+            {content.stages.map((stage, i) => (
+              <TimelineRow
+                key={`${stage.sourceLabel}-${stage.title}`}
+                last={i === content.stages.length - 1}
+                badge={
+                  <StageBadge n={i + 1} icon={stage.icon} color={i % 2 === 0 ? "blue" : "orange"} />
+                }
+              >
+                <StageBody stage={stage} t={t} emirate={config.emirate} />
+              </TimelineRow>
+            ))}
+          </div>
+        </SectionCard>
+
+        {/* ---------------------------- timeline at a glance ---------------------- */}
+        <SectionCard id="timeline" title="Your Timeline at a Glance">
+          {content.glance ? (
+            <div className="mt-5 rounded-2xl bg-[#EEF3FB] p-5 text-center ring-1 ring-[#B9CCE6]">
+              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#4878BC] text-white">
+                <IcClock className="h-5 w-5" />
+              </span>
+              <p className="mt-3 text-[16px] leading-relaxed font-semibold text-[#111827]">
+                <Rich text={content.glance.body} t={t} />
+              </p>
+              {content.glance.note ? (
+                <p className="mt-2.5 text-[13px] leading-relaxed text-[#6B7280] italic">
+                  <Rich text={content.glance.note} t={t} />
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <p className="mt-3 text-[15px] text-[#6B7280]">
+              Your dedicated team will confirm the expected timeline with you directly.
+            </p>
+          )}
+        </SectionCard>
+
+        {/* -------------------------------- guarantee ---------------------------- */}
+        <SectionCard id="guarantee" title={GUARANTEE.title}>
+          <div className="mt-5 rounded-2xl bg-[#EAF7F1] p-5 ring-1 ring-[#15B886]/35">
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#15B886] text-white">
+              <IcShield className="h-5 w-5" />
+            </span>
+            {GUARANTEE.body.map((p, i) => (
+              <p
+                key={i}
+                className="mt-3 text-[15px] leading-relaxed sm:text-justify font-semibold text-[#0A7C5A]"
+              >
+                <Rich text={p} t={t} />
+              </p>
+            ))}
+          </div>
+        </SectionCard>
+
+        {/* closing note */}
+        <div className="text-center">
+          <div className="mx-auto h-px w-12 bg-[#B9CCE6]" />
+          <p className="mt-4 text-[15px] leading-relaxed text-[#6B7280] italic">{OUTRO}</p>
+          <img
+            src="/assets/maids-logo.png"
+            alt="maids.cc"
+            className="mx-auto mt-6 h-7 w-auto opacity-60"
+            width={247}
+            height={83}
+          />
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/* Re-exported so /debug can render a chevron in its own controls without
+   importing the icon set twice. */
+export { IcChevron };

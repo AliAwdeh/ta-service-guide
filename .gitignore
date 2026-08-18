@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+.tanstack/
+.nitro/
+.output/
+.wrangler/
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# local sqlite database (persisted guides + visit logs)
+data/
+
+# logs & OS noise
+*.log
+.DS_Store
+
+# editor
+.vscode/
+.idea/
+
+# local screenshots dropped in the project root
+/CleanShot*.png

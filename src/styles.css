@@ -1,0 +1,39 @@
+@import "tailwindcss" source(none);
+@source "../src";
+
+/* The guides are light documents on a soft blue wash — the same ground the
+   maids.cc client deck uses. Pinned here (not theme-switchable) because these
+   pages are an official document, and because they are opened inside WhatsApp's
+   in-app browser where a dark repaint would fight the brand palette. */
+@theme {
+  --spacing: 0.25rem;
+}
+
+:root {
+  --wash: #eef3fb;
+  --ink: #111827;
+}
+
+@layer base {
+  html {
+    background-color: var(--wash);
+    color: var(--ink);
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100vh;
+    background-color: var(--wash);
+    color: var(--ink);
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      "Helvetica Neue",
+      Arial,
+      sans-serif;
+  }
+}

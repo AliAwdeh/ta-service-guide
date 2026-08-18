@@ -1,0 +1,777 @@
+{
+  "info": {
+    "name": "TA Service Guide",
+    "description": "Per-client service guide links for maids.cc. POST resolves which of 14 service guides a client should see and returns an unguessable /v/<code> link.\n\nSet the collection variables `baseUrl` and `apiToken` first.\n\nFull reference: docs/API.md",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "apiToken",
+      "value": "change-me"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "description": "A guide token, set from a POST response."
+    }
+  ],
+  "item": [
+    {
+      "name": "Create \u2014 resolved from client data",
+      "description": "The production path: send the ERP's own fields and let the API pick the guide.",
+      "item": [
+        {
+          "name": "Filipina in the Philippines (Dubai file)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "EMIRATE sets the private entry permit fee (Dubai AED 2,614 incl. a refundable AED 2,000 deposit; others AED 450) and gates the deposit-refund section.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 1001,\n  \"NATIONALITY\": \"Philippines\",\n  \"MAID_LOCATION\": \"in-country\",\n  \"EMIRATE\": \"dubai\",\n  \"ROLE\": \"maid\",\n  \"GENDER\": \"female\",\n  \"ref\": \"whatsapp\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Ethiopian in Ethiopia",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "MAID_LOCATION is REQUIRED for Ethiopian \u2014 the in-country guide adds a 39-day GCC and 30-day pre-departure that a maid abroad skips.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 1002,\n  \"NATIONALITY\": \"Ethiopia\",\n  \"MAID_LOCATION\": \"in-country\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Ethiopian outside Ethiopia",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 1003,\n  \"NATIONALITY\": \"ethiopian\",\n  \"MAID_LOCATION\": \"outside-country\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Indian ECNR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "PASSPORT_TYPE is REQUIRED for Indian.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 1004,\n  \"NATIONALITY\": \"India\",\n  \"PASSPORT_TYPE\": \"ECNR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Indian Male ECR (driver)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "GENDER is REQUIRED for Indian ECR \u2014 the male route needs an OK to Board clearance. ROLE changes the designation noun throughout.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 1005,\n  \"NATIONALITY\": \"indian\",\n  \"PASSPORT_TYPE\": \"ECR\",\n  \"GENDER\": \"male\",\n  \"ROLE\": \"driver\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Indian Female ECR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "The female ECR route is a tourist visa where the client must have AED 2,000 in cash ready for immigration \u2014 which is why GENDER cannot be defaulted.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 1006,\n  \"NATIONALITY\": \"indian\",\n  \"PASSPORT_TYPE\": \"ECR\",\n  \"GENDER\": \"female\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Nepali in Nepal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 1007,\n  \"NATIONALITY\": \"Nepalese\",\n  \"MAID_LOCATION\": \"in-country\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Sri Lankan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 1008,\n  \"NATIONALITY\": \"Sri Lanka\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Kenyan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 1009,\n  \"NATIONALITY\": \"Kenya\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Cameroonian",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 1010,\n  \"NATIONALITY\": \"Cameroon\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Ugandan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 1011,\n  \"NATIONALITY\": \"Uganda\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Visa-only package (wins over nationality)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "PACKAGE=visa-only short-circuits nationality entirely.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 1012,\n  \"NATIONALITY\": \"Philippines\",\n  \"MAID_LOCATION\": \"in-country\",\n  \"PACKAGE\": \"visa-only\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Unknown nationality falls back to Other",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "Unrecognised picklist values resolve to the generic guide rather than erroring. Check resolved.serviceGuide in the response.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 1013,\n  \"NATIONALITY\": \"Georgian\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create \u2014 pinned guide",
+      "description": "Skip resolution when you already know which guide applies. A pinned guide survives later discriminator edits.",
+      "item": [
+        {
+          "name": "Pin a guide with SERVICE_GUIDE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 2001,\n  \"SERVICE_GUIDE\": \"sri-lankan-in-sri-lanka\",\n  \"ROLE\": \"maid\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Read",
+      "item": [
+        {
+          "name": "Get a guide by token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides?token={{token}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "{{token}}"
+                }
+              ]
+            },
+            "description": "Accepts a bare token or a full/partial link. Bearer-gated internal tooling, so this returns clientId; the public /v/ path never does."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Correct in place (PATCH)",
+      "description": "The token never changes, so a link already sent on WhatsApp keeps working and shows the corrected guide.",
+      "item": [
+        {
+          "name": "Change nationality \u2014 guide follows",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "Re-resolves the guide from the merged row.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{token}}\",\n  \"NATIONALITY\": \"Uganda\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Rejected: incomplete merge (rolls back)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "422. The merged row would have no PASSPORT_TYPE, so the patch is rolled back and the link keeps rendering what it did before.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{token}}\",\n  \"NATIONALITY\": \"indian\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Accepted: same change with the discriminator",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{token}}\",\n  \"NATIONALITY\": \"indian\",\n  \"PASSPORT_TYPE\": \"ECNR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Fix a typo in the role",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{token}}\",\n  \"ROLE\": \"nanny\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Errors",
+      "item": [
+        {
+          "name": "401 \u2014 no bearer token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Responds {\"ok\":false,\"step\":\"auth\",...}."
+          }
+        },
+        {
+          "name": "422 \u2014 Ethiopian without MAID_LOCATION",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 3001,\n  \"NATIONALITY\": \"ethiopian\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "422 \u2014 Indian without PASSPORT_TYPE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 3002,\n  \"NATIONALITY\": \"indian\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "422 \u2014 Indian ECR without GENDER",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 3003,\n  \"NATIONALITY\": \"indian\",\n  \"PASSPORT_TYPE\": \"ECR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Analytics feed",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin"]
+            },
+            "description": "Every generated guide with visit counts, plus the visit log."
+          }
+        }
+      ]
+    }
+  ]
+}
