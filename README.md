@@ -107,6 +107,21 @@ single string serves a female maid and a male driver. This also fixes a slip in 
 document, where the Indian Male ECR tab is written in he/his but still says "within 3 days of
 **her** being ready to travel".
 
+Two content rules the data enforces:
+
+- **Every mention of GCC attestation names both authorities** — `(Ministry of Foreign Affairs &
+  UAE Embassy)`, for every nationality. A client told only that the certificate must be
+  "attested" has no way to know what to ask their agent for. The string is hoisted as
+  `MOFA_EMBASSY` so the wording cannot drift between guides.
+- **A callout never repeats the icon of the stage it sits under.** Tone defaults exist
+  (`documents` → clipboard, `info` → info, `breakdown` → list, `timeline` → clock), and any box
+  can override with `icon` / `noteIcon`. Two identical glyphs stacked together read as a
+  rendering bug rather than a pattern.
+
+Callouts come in four tones. `timeline` draws the rows as a numbered vertical stepper instead of
+a duration table — used where the *order* is the point and each step only starts once the
+previous one finishes (the Ethiopian-outside-Ethiopia "How the GCC Is Issued" sequence).
+
 ## Known defects in the source document
 
 Transcribed faithfully rather than silently corrected — inventing process facts in a

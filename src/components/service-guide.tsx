@@ -77,22 +77,18 @@ const IcDoc = (p: IconProps) => (
     <path d="m9 15 2 2 4-4" />
   </Icon>
 );
+/* Symmetric top-down airliner. Written out as explicit geometry rather than
+   copied from an icon set: nose at the top, wings sweeping back from the
+   mid-fuselage, tailplanes at the bottom. Stays readable at 20px. */
 const IcPlane = (p: IconProps) => (
   <Icon {...p}>
-    <path d="M17.8 19.2 16 11l3.5-3.5a2.12 2.12 0 0 0-3-3L13 8 4.8 6.2a1 1 0 0 0-.9 1.7L8 11l-2 5-2.5.5a1 1 0 0 0-.2 1.9l4.2 1.2 1.2 4.2a1 1 0 0 0 1.9-.2L11 21l5-2 3.1 4.1a1 1 0 0 0 1.7-.9Z" />
+    <path d="M12 2.5 13.2 6.5v3.5l8.3 5v1.8l-8.3-2.6v4.3l2.6 2.3V22L12 21l-3.8 1v-1.2l2.6-2.3v-4.3L2.5 16.8V15l8.3-5V6.5Z" />
   </Icon>
 );
 const IcClock = (p: IconProps) => (
   <Icon {...p}>
     <circle cx="12" cy="12" r="9" />
     <path d="M12 7v5l3 2" />
-  </Icon>
-);
-const IcShip = (p: IconProps) => (
-  <Icon {...p}>
-    <path d="M2 13h20l-2 7H4l-2-7Z" />
-    <path d="M5 13V6a1 1 0 0 1 1-1h8l4 4v4" />
-    <path d="M12 5V2" />
   </Icon>
 );
 const IcTraining = (p: IconProps) => (
@@ -136,20 +132,73 @@ const IcMoney = (p: IconProps) => (
     <path d="M6 12h.01M18 12h.01" />
   </Icon>
 );
-const IcBuilding = (p: IconProps) => (
+/* Required-documents boxes — a clipboard, so it never collides with the
+   document-shaped icon a "Travel & Visa Processing" stage uses. */
+const IcClipboard = (p: IconProps) => (
   <Icon {...p}>
-    <rect x="4" y="3" width="16" height="18" rx="1.5" />
-    <path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2" />
+    <rect x="8" y="2" width="8" height="4" rx="1" />
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    <path d="M8 11h8M8 15h5" />
   </Icon>
 );
-const IcMedical = (p: IconProps) => (
+/* "Please note" asides. */
+const IcInfo = (p: IconProps) => (
   <Icon {...p}>
-    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v5" />
+    <path d="M12 8h.01" />
   </Icon>
 );
-const IcChevron = (p: IconProps) => (
+/* Something the client must act on or remember. */
+const IcAlert = (p: IconProps) => (
   <Icon {...p}>
-    <path d="m6 9 6 6 6-6" />
+    <path d="M10.3 3.3 2.4 17a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0Z" />
+    <path d="M12 9v4" />
+    <path d="M12 17h.01" />
+  </Icon>
+);
+/* Process breakdowns — a stack of steps with their durations. */
+const IcList = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M8 6h13M8 12h13M8 18h13" />
+    <path d="M3 6h.01M3 12h.01M3 18h.01" />
+  </Icon>
+);
+/* A government officer visiting in person (Sri Lanka development office). */
+const IcOfficer = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="10" cy="8" r="3.5" />
+    <path d="M3.5 21a6.5 6.5 0 0 1 13 0" />
+    <path d="m16.5 12.5 1.8 1.8 3.2-3.4" />
+  </Icon>
+);
+/* Biometrics at an embassy. */
+const IcFingerprint = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4" />
+    <path d="M14 13.12c0 2.38 0 6.38-1 8.88" />
+    <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02" />
+    <path d="M2 12a10 10 0 0 1 18-6" />
+    <path d="M2 16h.01" />
+    <path d="M21.8 16c.2-2 .131-5.354 0-6" />
+    <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2" />
+    <path d="M8.65 22c.21-.66.45-1.32.57-2" />
+    <path d="M9 6.8a6 6 0 0 1 9 5.2v2" />
+  </Icon>
+);
+/* Hardcopy documents going out by courier. */
+const IcSend = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3 11.5 21 3l-8.5 18-2.5-7-6.5-2.5Z" />
+    <path d="M21 3l-10.5 10.5" />
+  </Icon>
+);
+/* An issued certificate. */
+const IcCertificate = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="9" r="6" />
+    <path d="m8.5 14-1.5 7 5-3 5 3-1.5-7" />
+    <path d="m10 9 1.5 1.5L15 7" />
   </Icon>
 );
 
@@ -158,15 +207,20 @@ const ICONS: Record<IconName, (p: IconProps) => ReactNode> = {
   doc: IcDoc,
   plane: IcPlane,
   clock: IcClock,
-  ship: IcShip,
   training: IcTraining,
   stamp: IcStamp,
   permit: IcPermit,
   refresh: IcRefresh,
   check: IcCheck,
   money: IcMoney,
-  building: IcBuilding,
-  medical: IcMedical,
+  clipboard: IcClipboard,
+  info: IcInfo,
+  alert: IcAlert,
+  list: IcList,
+  officer: IcOfficer,
+  fingerprint: IcFingerprint,
+  send: IcSend,
+  certificate: IcCertificate,
 };
 
 /* ------------------------------- rich text -------------------------------- */
@@ -294,18 +348,27 @@ function BulletList({ items, t }: { items: (string | Bullet)[]; t: Terms }) {
 
 /* -------------------------------- callouts -------------------------------- */
 
+/* Per-tone visual treatment and the FALLBACK icon. A callout can override the
+   icon (Callout.icon) and its footnote icon (Callout.noteIcon) — worth doing
+   whenever the default would repeat the icon of the stage it sits under, since
+   two identical glyphs stacked on top of each other read as a rendering bug. */
 const CALLOUT_STYLE: Record<Callout["tone"], { box: string; chip: string; icon: IconName }> = {
   documents: {
     box: "border-[#B9CCE6] bg-[#EEF3FB]",
     chip: "bg-[#4878BC]",
-    icon: "doc",
+    icon: "clipboard",
   },
   info: {
     box: "border-[#F6891E]/40 bg-[#FFF6EC]",
     chip: "bg-[#F6891E]",
-    icon: "shield",
+    icon: "info",
   },
   breakdown: {
+    box: "border-[#B9CCE6] bg-white",
+    chip: "bg-[#4878BC]",
+    icon: "list",
+  },
+  timeline: {
     box: "border-[#B9CCE6] bg-white",
     chip: "bg-[#4878BC]",
     icon: "clock",
@@ -314,7 +377,8 @@ const CALLOUT_STYLE: Record<Callout["tone"], { box: string; chip: string; icon: 
 
 function CalloutBox({ callout, t }: { callout: Callout; t: Terms }) {
   const style = CALLOUT_STYLE[callout.tone];
-  const I = ICONS[style.icon] ?? IcDoc;
+  const I = ICONS[callout.icon ?? style.icon] ?? IcClipboard;
+  const NoteIcon = ICONS[callout.noteIcon ?? "alert"] ?? IcAlert;
   return (
     <div className={`mt-3.5 overflow-hidden rounded-xl border ${style.box}`}>
       {callout.title ? (
@@ -342,30 +406,34 @@ function CalloutBox({ callout, t }: { callout: Callout; t: Terms }) {
         {callout.items?.length ? <BulletList items={callout.items} t={t} /> : null}
 
         {callout.rows?.length ? (
-          <div className="mt-2.5 overflow-hidden rounded-lg bg-white ring-1 ring-[#B9CCE6]/70">
-            {callout.rows.map((row, i) => (
-              <div
-                key={i}
-                className={`flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-3 py-2.5 ${
-                  i === 0 ? "" : "border-t border-[#B9CCE6]/50"
-                }`}
-              >
-                <span className="text-[13px] leading-snug font-semibold text-[#374151]">
-                  <Rich text={row.label} t={t} />
-                </span>
-                {row.value ? (
-                  <span className="text-[13px] font-bold whitespace-nowrap text-[#4878BC]">
-                    <Rich text={row.value} t={t} />
+          callout.tone === "timeline" ? (
+            <CalloutTimeline rows={callout.rows} t={t} />
+          ) : (
+            <div className="mt-2.5 overflow-hidden rounded-lg bg-white ring-1 ring-[#B9CCE6]/70">
+              {callout.rows.map((row, i) => (
+                <div
+                  key={i}
+                  className={`flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-3 py-2.5 ${
+                    i === 0 ? "" : "border-t border-[#B9CCE6]/50"
+                  }`}
+                >
+                  <span className="text-[13px] leading-snug font-semibold text-[#374151]">
+                    <Rich text={row.label} t={t} />
                   </span>
-                ) : null}
-              </div>
-            ))}
-          </div>
+                  {row.value ? (
+                    <span className="text-[13px] font-bold whitespace-nowrap text-[#4878BC]">
+                      <Rich text={row.value} t={t} />
+                    </span>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )
         ) : null}
 
         {callout.note ? (
           <p className="mt-2.5 flex items-start gap-2 rounded-lg bg-white px-3 py-2.5 text-[13px] leading-relaxed font-semibold text-[#111827] ring-1 ring-[#B9CCE6]/60">
-            <IcShield className="mt-0.5 h-4 w-4 shrink-0 text-[#4878BC]" />
+            <NoteIcon className="mt-0.5 h-4 w-4 shrink-0 text-[#F6891E]" />
             <span className="sm:text-justify">
               <Rich text={callout.note} t={t} />
             </span>
@@ -373,6 +441,42 @@ function CalloutBox({ callout, t }: { callout: Callout; t: Terms }) {
         ) : null}
       </div>
     </div>
+  );
+}
+
+/**
+ * A callout's rows drawn as a numbered vertical timeline instead of a table —
+ * for sequences where the ORDER is the point (each step only starts once the
+ * previous one is done), not just a list of durations.
+ */
+function CalloutTimeline({ rows, t }: { rows: { label: string; value?: string }[]; t: Terms }) {
+  return (
+    <ol className="mt-3">
+      {rows.map((row, i) => {
+        const last = i === rows.length - 1;
+        return (
+          <li key={i} className="flex gap-3">
+            <div className="flex flex-col items-center self-stretch">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#4878BC] text-[11px] font-bold text-white ring-2 ring-white">
+                {i + 1}
+              </span>
+              {last ? null : <div className="my-1 w-0.5 flex-1 rounded bg-[#4878BC]/35" />}
+            </div>
+            <div className={`min-w-0 flex-1 ${last ? "" : "pb-4"}`}>
+              <p className="text-[13px] leading-snug font-semibold text-[#374151]">
+                <Rich text={row.label} t={t} />
+              </p>
+              {row.value ? (
+                <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#EEF3FB] px-2.5 py-0.5 text-[11px] font-bold whitespace-nowrap text-[#4878BC]">
+                  <IcClock className="h-3 w-3" />
+                  <Rich text={row.value} t={t} />
+                </span>
+              ) : null}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -701,7 +805,3 @@ export function ServiceGuide({ config }: { config: VariantConfig }) {
     </div>
   );
 }
-
-/* Re-exported so /debug can render a chevron in its own controls without
-   importing the icon set twice. */
-export { IcChevron };

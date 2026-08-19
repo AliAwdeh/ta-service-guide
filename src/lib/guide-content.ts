@@ -29,24 +29,34 @@ export type IconName =
   | "doc"
   | "plane"
   | "clock"
-  | "ship"
   | "training"
   | "stamp"
   | "permit"
   | "refresh"
   | "check"
   | "money"
-  | "building"
-  | "medical";
+  | "clipboard"
+  | "info"
+  | "alert"
+  | "list"
+  | "officer"
+  | "fingerprint"
+  | "send"
+  | "certificate";
 
 /** A bulleted item, optionally with its own sub-bullets (the source document's
     "Proof of Income: (Both Required)" shape). */
 export type Bullet = { text: string; sub?: string[] };
 
 /** A boxed aside. The source document uses single-cell tables for these; `tone`
-    picks the visual treatment. */
+    picks the visual treatment:
+      documents — the blue "Required Documents" checklist
+      info      — an orange "please note" aside
+      breakdown — a label → duration table
+      timeline  — the same rows drawn as a numbered vertical stepper, for
+                  sequences where the ORDER matters and not just the durations */
 export type Callout = {
-  tone: "documents" | "info" | "breakdown";
+  tone: "documents" | "info" | "breakdown" | "timeline";
   title?: string;
   /** Lead paragraphs. */
   body?: string[];
@@ -56,6 +66,12 @@ export type Callout = {
   rows?: { label: string; value?: string }[];
   /** Small print inside the box. */
   note?: string;
+  /** Override the tone's default header icon. Set this whenever the default
+      would repeat the icon of the stage this box sits under — two identical
+      glyphs stacked together read as a rendering bug rather than a pattern. */
+  icon?: IconName;
+  /** Override the footnote icon (defaults to "alert"). */
+  noteIcon?: IconName;
   /** Render only when the sponsor's Emirates ID is (or may be) Dubai-issued —
       the refundable AED 2,000 deposit only applies to Dubai files. */
   onlyWithDeposit?: boolean;
@@ -158,6 +174,15 @@ const VISA_7_BUSINESS_DAYS =
   "Visa processing typically takes up to 7 business days after the government accepts the " +
   "submitted documents.";
 
+/** The two authorities that attest a Good Conduct Certificate. Every mention of
+    GCC attestation names both, for every nationality — a client who is told only
+    "attested" has no way to know what to ask their agent for. Hoisted so the
+    wording can never drift between guides. */
+export const MOFA_EMBASSY = "(Ministry of Foreign Affairs & UAE Embassy)";
+
+/** The attested-GCC line for a Required Documents checklist. */
+const ATTESTED_GCC_DOC = `Attested Good Conduct Certificate ${MOFA_EMBASSY}`;
+
 /** "Passport copy + face photo" — the minimum document set on most tabs. */
 const PASSPORT_AND_PHOTO: Bullet[] = [
   { text: "{Role}'s Passport Copy" },
@@ -171,15 +196,19 @@ const GCC_INTRO_ATTESTED =
 
 const GCC_INTRO_MANDATORY =
   "Before the visa application can be initiated, your {role} must obtain a Good Conduct " +
-  "Certificate confirming {subj} has no criminal record. This is a mandatory requirement for " +
-  "all {role}s.";
+  "Certificate confirming {subj} has no criminal record, attested by the Ministry of Foreign " +
+  "Affairs & UAE Embassy. This is a mandatory requirement for all {role}s.";
 
 /** Required-documents box for the "we obtain the attested GCC" tabs. */
 const gccDocuments = (note: string): Callout => ({
   tone: "documents",
   title: "Required Documents",
-  items: [...PASSPORT_AND_PHOTO, { text: "Attested Good Conduct Certificate" }],
+  items: [...PASSPORT_AND_PHOTO, { text: ATTESTED_GCC_DOC }],
   note,
+  // The note is a promise that WE handle the attestation, not a warning. Also
+  // avoids a second shield: both guides using this helper already badge their
+  // GCC stage with one.
+  noteIcon: "check",
 });
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -249,7 +278,7 @@ const FILIPINA_PHILIPPINES: GuideContent = {
     {
       sourceLabel: "01",
       title: "Travel & Visa Processing",
-      icon: "doc",
+      icon: "permit",
       body: [
         "The first step in bringing your {role} to the UAE is to apply for {poss} entry permit. " +
           "The issuance of the entry permit usually takes up to 7 working days after receiving " +
@@ -285,6 +314,7 @@ const FILIPINA_PHILIPPINES: GuideContent = {
         {
           tone: "info",
           title: "Additional Requirements",
+          icon: "alert",
           items: [
             {
               text:
@@ -341,7 +371,7 @@ const FILIPINA_PHILIPPINES: GuideContent = {
       sourceLabel: "03",
       title: "Document Shipment & Pre-Departure Processing — Philippines",
       duration: "2 Weeks",
-      icon: "ship",
+      icon: "send",
       body: [
         "Once attestation by the Philippine Consulate is completed, the documents (entry permit " +
           "and contract) will be shipped to our partner agency in the Philippines.",
@@ -354,7 +384,7 @@ const FILIPINA_PHILIPPINES: GuideContent = {
       sourceLabel: "04",
       title: "Final Preparations — Philippines",
       duration: "2 Weeks",
-      icon: "training",
+      icon: "certificate",
       body: ["The final steps of the process include:"],
       bullets: [
         "OWWA seminar and certificate issuance",
@@ -387,6 +417,7 @@ const FILIPINA_PHILIPPINES: GuideContent = {
         {
           tone: "info",
           title: "For Dubai files only (where AED 2,614 was paid)",
+          icon: "money",
           body: [
             "You may visit our center with your Emirates ID to request the refund of the " +
               "**AED 2,000** security deposit.",
@@ -423,15 +454,16 @@ const ETHIOPIAN_IN_ETHIOPIA: GuideContent = {
         {
           tone: "documents",
           title: "Required Documents",
-          items: [...PASSPORT_AND_PHOTO, { text: "Attested Good Conduct Certificate" }],
+          items: [...PASSPORT_AND_PHOTO, { text: ATTESTED_GCC_DOC }],
         },
         {
           tone: "breakdown",
           title: "Good Conduct Certificate Process Breakdown",
+          icon: "certificate",
           rows: [
             { label: "GCC Issuance", value: "7 working days" },
             {
-              label: "GCC Attestation (at the Ministry of Foreign Affairs & UAE Embassy)",
+              label: `GCC Attestation ${MOFA_EMBASSY}`,
               value: "32 working days",
             },
           ],
@@ -515,18 +547,22 @@ const ETHIOPIAN_OUTSIDE_ETHIOPIA: GuideContent = {
       icon: "shield",
       body: [
         "Before the visa application can be initiated, your {role} must obtain an Attested " +
-          "Good Conduct Certificate confirming {subj} has no criminal record. This is a " +
-          "mandatory requirement for all {role}s.",
+          "Good Conduct Certificate confirming {subj} has no criminal record, attested by the " +
+          "Ministry of Foreign Affairs & UAE Embassy. This is a mandatory requirement for all " +
+          "{role}s.",
       ],
       callouts: [
         {
           tone: "documents",
           title: "Required Documents",
-          items: [...PASSPORT_AND_PHOTO, { text: "Attested Good Conduct Certificate" }],
+          items: [...PASSPORT_AND_PHOTO, { text: ATTESTED_GCC_DOC }],
         },
         {
-          tone: "breakdown",
+          // Ordered sequence, not a duration table: each step only starts once the
+          // previous one is done, so it reads as a stepper.
+          tone: "timeline",
           title: "How the GCC Is Issued",
+          icon: "fingerprint",
           rows: [
             {
               label: "{Role} visits the Ethiopian embassy for biometrics & power of attorney",
@@ -541,7 +577,7 @@ const ETHIOPIAN_OUTSIDE_ETHIOPIA: GuideContent = {
             },
             { label: "GCC Issuance", value: "7 working days" },
             {
-              label: "GCC Attestation (Ministry of Foreign Affairs & UAE Embassy)",
+              label: `GCC Attestation ${MOFA_EMBASSY}`,
               value: "32 working days",
             },
           ],
@@ -592,14 +628,15 @@ const SRI_LANKAN_IN_SRI_LANKA: GuideContent = {
         {
           tone: "documents",
           title: "Required Documents",
-          items: [...PASSPORT_AND_PHOTO, { text: "Attested Good Conduct Certificate" }],
+          items: [...PASSPORT_AND_PHOTO, { text: ATTESTED_GCC_DOC }],
         },
         {
           tone: "breakdown",
           title: "GCC Process Breakdown",
+          icon: "certificate",
           rows: [
             { label: "GCC Issuance", value: "25 working days" },
-            { label: "GCC Attestation", value: "14 working days" },
+            { label: `GCC Attestation ${MOFA_EMBASSY}`, value: "14 working days" },
           ],
         },
       ],
@@ -637,6 +674,7 @@ const SRI_LANKAN_IN_SRI_LANKA: GuideContent = {
         {
           tone: "info",
           title: "Development Office Approval",
+          icon: "officer",
           body: [
             "Our partner agency in Sri Lanka will submit a request for the development office " +
               "to visit the {role} and approve {poss} travel. A development officer will visit " +
@@ -685,9 +723,11 @@ const UGANDAN: GuideContent = {
             ...PASSPORT_AND_PHOTO,
             { text: "**Good Conduct Certificate:** Acquired from the police station." },
           ],
+          noteIcon: "shield",
           note:
-            "We can obtain the Attested Good Conduct Certificate on your {role}'s behalf, free " +
-            "of charge. This typically takes **5** working days.",
+            "We can obtain the Attested Good Conduct Certificate on your {role}'s behalf and " +
+            "have it attested at the Ministry of Foreign Affairs & UAE Embassy, free of charge. " +
+            "This typically takes **5** working days.",
         },
       ],
       body: [
@@ -728,6 +768,7 @@ const NEPAL_DOCUMENTS: Callout = {
   note:
     "If the {role} does not have a GCC, issuing and attesting it typically takes 15 " +
     "business days.",
+  noteIcon: "shield",
 };
 
 const NEPALI_IN_NEPAL: GuideContent = {
@@ -914,6 +955,7 @@ const INDIAN_FEMALE_ECR: GuideContent = {
           tone: "documents",
           title: "Required Documents",
           items: PASSPORT_AND_PHOTO,
+          noteIcon: "money",
           note:
             "**Note:** Please also make sure **AED 2,000** in cash is ready for your {role} to " +
             "carry with {obj}. {Subj}'ll need to present this to UAE immigration on arrival as " +
@@ -967,8 +1009,9 @@ const KENYAN: GuideContent = {
       body: [GCC_INTRO_MANDATORY],
       callouts: [
         gccDocuments(
-          "We can obtain the Attested Good Conduct Certificate on your {role}'s behalf, free of " +
-            "charge. This typically takes **15** days.",
+          "We can obtain the Attested Good Conduct Certificate on your {role}'s behalf and have " +
+            `it attested at the Ministry of Foreign Affairs & UAE Embassy, free of charge. ` +
+            "This typically takes **15** days.",
         ),
       ],
     },
@@ -1078,6 +1121,7 @@ const OTHER: GuideContent = {
         {
           tone: "info",
           title: "Please Note — Good Conduct Certificate",
+          icon: "shield",
           body: [
             "The **UAE immigration authorities** require a **Good Conduct Certificate** as part " +
               "of the visa process for nationals of the following countries: Afghanistan, " +
@@ -1128,6 +1172,7 @@ const VISA_ONLY: GuideContent = {
         {
           tone: "info",
           title: "Please Note — Good Conduct Certificate",
+          icon: "shield",
           body: [
             "In some cases, UAE immigration may require a **Good Conduct Certificate** as part " +
               "of the visa process.",
