@@ -110,16 +110,23 @@ document, where the Indian Male ECR tab is written in he/his but still says "wit
 Two content rules the data enforces:
 
 - **Every mention of GCC attestation names both authorities** — `(Ministry of Foreign Affairs &
-  UAE Embassy)`, for every nationality. A client told only that the certificate must be
+UAE Embassy)`, for every nationality. A client told only that the certificate must be
   "attested" has no way to know what to ask their agent for. The string is hoisted as
   `MOFA_EMBASSY` so the wording cannot drift between guides.
 - **A callout never repeats the icon of the stage it sits under.** Tone defaults exist
   (`documents` → clipboard, `info` → info, `breakdown` → list, `timeline` → clock), and any box
   can override with `icon` / `noteIcon`. Two identical glyphs stacked together read as a
   rendering bug rather than a pattern.
+- **The same step carries the same icon in every guide.** "Travel & Visa Processing" uses the
+  `permit` glyph in all 14, so a client who sees two guides recognises the step. Exit clearances
+  (Ethiopian exit permit, Nepali POE, Indian OK to Board) use `stamp` to stay distinct from it.
+- **Every duration uses one `DurationChip`**, placed as a right float at the end of its label so
+  it settles into the free space a wrapped label leaves on its last line, flush right — and drops
+  to its own line still right-aligned when there is no room. Stage headings, breakdown rows and
+  timeline steps all go through it, so durations are identical in look and position.
 
 Callouts come in four tones. `timeline` draws the rows as a numbered vertical stepper instead of
-a duration table — used where the *order* is the point and each step only starts once the
+a duration table — used where the _order_ is the point and each step only starts once the
 previous one finishes (the Ethiopian-outside-Ethiopia "How the GCC Is Issued" sequence).
 
 ## Known defects in the source document

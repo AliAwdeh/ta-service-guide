@@ -477,7 +477,7 @@ const ETHIOPIAN_IN_ETHIOPIA: GuideContent = {
       sourceLabel: "02",
       title: "Travel & Visa Processing",
       duration: "7 days",
-      icon: "doc",
+      icon: "permit",
       body: [
         "Once we receive the required documents, we will initiate the visa application. " +
           VISA_7_BUSINESS_DAYS,
@@ -507,7 +507,7 @@ const ETHIOPIAN_IN_ETHIOPIA: GuideContent = {
       sourceLabel: "04",
       title: "Exit Permit – Ethiopia",
       duration: "7 Days",
-      icon: "permit",
+      icon: "stamp",
       body: [
         "Once the entry permit is issued and all documents are fully attested, our partner " +
           "agency will complete the final pre-departure requirements, including issuance of the " +
@@ -587,7 +587,7 @@ const ETHIOPIAN_OUTSIDE_ETHIOPIA: GuideContent = {
     {
       sourceLabel: "02",
       title: "Travel & Visa Processing",
-      icon: "doc",
+      icon: "permit",
       body: [
         "Once we receive your {role}'s documents, we will apply for {poss} visa. " +
           VISA_7_BUSINESS_DAYS,
@@ -648,7 +648,7 @@ const SRI_LANKAN_IN_SRI_LANKA: GuideContent = {
       sourceLabel: "02",
       title: "Travel & Visa Processing",
       duration: "7 days",
-      icon: "doc",
+      icon: "permit",
       body: [
         "Once we receive the required documents, we will initiate the visa application. " +
           VISA_7_BUSINESS_DAYS,
@@ -714,7 +714,7 @@ const UGANDAN: GuideContent = {
       sourceLabel: "01",
       title: "Travel & Visa Processing",
       duration: "12 Days",
-      icon: "doc",
+      icon: "permit",
       callouts: [
         {
           tone: "documents",
@@ -783,7 +783,7 @@ const NEPALI_IN_NEPAL: GuideContent = {
       sourceLabel: "01",
       title: "Travel & Visa Processing",
       duration: "22 Days",
-      icon: "doc",
+      icon: "permit",
       callouts: [NEPAL_DOCUMENTS],
       body: [
         "Once we receive the required documents, we will initiate the visa application. " +
@@ -794,7 +794,7 @@ const NEPALI_IN_NEPAL: GuideContent = {
       sourceLabel: "02",
       title: "POE Process — Nepal",
       duration: "15 Days",
-      icon: "permit",
+      icon: "stamp",
       body: [
         "Upon the issuance of the visa, we will begin the Permit of Exit (POE) process through " +
           "the relevant Nepalese authorities. This is a mandatory government clearance required " +
@@ -830,7 +830,7 @@ const NEPALI_OUTSIDE_NEPAL: GuideContent = {
       sourceLabel: "01",
       title: "Travel & Visa Processing",
       duration: "22 Days",
-      icon: "doc",
+      icon: "permit",
       callouts: [NEPAL_DOCUMENTS],
       body: [
         "Once we receive the required documents, we will initiate the visa application. " +
@@ -870,7 +870,7 @@ const INDIAN_ECNR: GuideContent = {
     {
       sourceLabel: "01",
       title: "Travel & Visa Processing",
-      icon: "doc",
+      icon: "permit",
       callouts: [{ tone: "documents", title: "Required Documents", items: PASSPORT_AND_PHOTO }],
       body: [
         "Once we receive the required documents, we will apply for {poss} visa. " +
@@ -905,7 +905,7 @@ const INDIAN_MALE_ECR: GuideContent = {
     {
       sourceLabel: "01",
       title: "Travel & Visa Processing",
-      icon: "doc",
+      icon: "permit",
       callouts: [{ tone: "documents", title: "Required Documents", items: PASSPORT_AND_PHOTO }],
       body: [
         "Once we receive your {role}'s documents, we will apply for {poss} visa. " +
@@ -915,7 +915,7 @@ const INDIAN_MALE_ECR: GuideContent = {
     {
       sourceLabel: "02",
       title: "Pre-Departure — Exit Approval",
-      icon: "permit",
+      icon: "stamp",
       body: [
         "Once your {role}'s visa is issued, we will apply for {poss} travel clearance and OK to " +
           "Board. This process typically takes 10 business days.",
@@ -949,7 +949,7 @@ const INDIAN_FEMALE_ECR: GuideContent = {
     {
       sourceLabel: "01",
       title: "Travel & Visa Processing",
-      icon: "doc",
+      icon: "permit",
       callouts: [
         {
           tone: "documents",
@@ -1019,7 +1019,7 @@ const KENYAN: GuideContent = {
       sourceLabel: "02",
       title: "Travel & Visa Processing",
       duration: "7 Days",
-      icon: "doc",
+      icon: "permit",
       body: [
         "Once the Good Conduct Certificate is issued, we will initiate the visa application. " +
           "Visa processing typically takes up to 10 business days after the government accepts " +
@@ -1076,7 +1076,7 @@ const CAMEROONIAN: GuideContent = {
       sourceLabel: "02",
       title: "Travel & Visa Processing",
       duration: "7 Days",
-      icon: "doc",
+      icon: "permit",
       body: [
         "Once the Good Conduct Certificate is issued, we will initiate the visa application. " +
           "Visa processing typically takes up to 10 business days after the government accepts " +
@@ -1115,7 +1115,7 @@ const OTHER: GuideContent = {
     {
       sourceLabel: "01",
       title: "Travel & Visa Processing",
-      icon: "doc",
+      icon: "permit",
       callouts: [
         { tone: "documents", title: "Required Documents", items: PASSPORT_AND_PHOTO },
         {
@@ -1166,7 +1166,7 @@ const VISA_ONLY: GuideContent = {
     {
       sourceLabel: "01",
       title: "Visa Processing",
-      icon: "doc",
+      icon: "permit",
       callouts: [
         { tone: "documents", title: "Required Documents", items: PASSPORT_AND_PHOTO },
         {

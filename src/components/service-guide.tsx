@@ -290,6 +290,38 @@ function TimelineRow({
   );
 }
 
+/**
+ * A duration marker, and the one place any duration is styled — stage headings,
+ * process-breakdown rows and timeline steps all use it, so every duration on the
+ * page looks and sits the same.
+ *
+ * PLACEMENT: a right float, emitted as the LAST child of its label. That single
+ * choice gets both things we want, which neither inline flow nor flexbox manages
+ * on its own:
+ *   • A label that wrapped leaves empty space on its last line — often most of
+ *     the line — and the float settles into it, hard against the right edge. No
+ *     extra vertical space at all.
+ *   • When the last line has no room, the float drops to its own line and STAYS
+ *     right-aligned, instead of stranding itself on the left the way inline flow
+ *     would.
+ * Flexbox can do neither, because it treats the whole wrapped label as one
+ * atomic box and cannot see the free space inside it.
+ *
+ * The label needs `flow-root` (see DURATION_HOST) so it contains the float.
+ */
+function DurationChip({ value, t }: { value: string; t?: Terms }) {
+  return (
+    <span className="float-right mt-[3px] ml-2 inline-flex items-center gap-[3px] rounded-full bg-[#EEF3FB] px-1.5 py-[2px] text-[10px] leading-none font-bold whitespace-nowrap text-[#4878BC]">
+      <IcClock className="h-2.5 w-2.5 shrink-0" />
+      {t ? <Rich text={value} t={t} /> : value}
+    </span>
+  );
+}
+
+/** Any element hosting a DurationChip must establish a block formatting context,
+    or it won't grow to contain the float on the line-drop path. */
+const DURATION_HOST = "flow-root";
+
 /** Each major part of the page is its own card so they read as separate sections. */
 function SectionCard({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
@@ -411,21 +443,15 @@ function CalloutBox({ callout, t }: { callout: Callout; t: Terms }) {
           ) : (
             <div className="mt-2.5 overflow-hidden rounded-lg bg-white ring-1 ring-[#B9CCE6]/70">
               {callout.rows.map((row, i) => (
-                <div
+                <p
                   key={i}
-                  className={`flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-3 py-2.5 ${
+                  className={`${DURATION_HOST} px-3 py-2.5 text-[13px] leading-relaxed font-semibold text-[#374151] ${
                     i === 0 ? "" : "border-t border-[#B9CCE6]/50"
                   }`}
                 >
-                  <span className="text-[13px] leading-snug font-semibold text-[#374151]">
-                    <Rich text={row.label} t={t} />
-                  </span>
-                  {row.value ? (
-                    <span className="text-[13px] font-bold whitespace-nowrap text-[#4878BC]">
-                      <Rich text={row.value} t={t} />
-                    </span>
-                  ) : null}
-                </div>
+                  <Rich text={row.label} t={t} />
+                  {row.value ? <DurationChip value={row.value} t={t} /> : null}
+                </p>
               ))}
             </div>
           )
@@ -463,15 +489,12 @@ function CalloutTimeline({ rows, t }: { rows: { label: string; value?: string }[
               {last ? null : <div className="my-1 w-0.5 flex-1 rounded bg-[#4878BC]/35" />}
             </div>
             <div className={`min-w-0 flex-1 ${last ? "" : "pb-4"}`}>
-              <p className="text-[13px] leading-snug font-semibold text-[#374151]">
+              <p
+                className={`${DURATION_HOST} text-[13px] leading-relaxed font-semibold text-[#374151]`}
+              >
                 <Rich text={row.label} t={t} />
+                {row.value ? <DurationChip value={row.value} t={t} /> : null}
               </p>
-              {row.value ? (
-                <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#EEF3FB] px-2.5 py-0.5 text-[11px] font-bold whitespace-nowrap text-[#4878BC]">
-                  <IcClock className="h-3 w-3" />
-                  <Rich text={row.value} t={t} />
-                </span>
-              ) : null}
             </div>
           </li>
         );
@@ -573,16 +596,10 @@ function StageBody({ stage, t, emirate }: { stage: Stage; t: Terms; emirate: Emi
 
   return (
     <div className="pt-2.5">
-      <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-[18px] leading-snug font-bold text-[#111827]">
-          <Rich text={stage.title} t={t} />
-        </h3>
-        {stage.duration ? (
-          <span className="rounded-full bg-[#EEF3FB] px-3 py-1 text-xs font-bold whitespace-nowrap text-[#4878BC]">
-            {stage.duration}
-          </span>
-        ) : null}
-      </div>
+      <h3 className={`${DURATION_HOST} text-[18px] leading-snug font-bold text-[#111827]`}>
+        <Rich text={stage.title} t={t} />
+        {stage.duration ? <DurationChip value={stage.duration} /> : null}
+      </h3>
 
       {stage.body?.map((p, i) => (
         <Paragraph key={i} text={p} t={t} />
