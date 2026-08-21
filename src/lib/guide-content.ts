@@ -18,6 +18,7 @@ import type { ServiceGuide } from "./guide-config";
                      content string serves a maid and a male driver alike.
    • **bold**        inline emphasis, rendered as <strong>. Mirrors the bold the
                      source document uses for amounts and durations.
+   • [label](url)    a link, rendered as an <a> opening in a new tab.
    • `sourceLabel`   the stage number as the DOCUMENT prints it, kept even where
                      the document is wrong. Stages are RENUMBERED sequentially
                      for display (a client-facing page must not show "02" twice)
@@ -64,6 +65,8 @@ export type Callout = {
   items?: Bullet[];
   /** label → value rows (process breakdowns with their durations). */
   rows?: { label: string; value?: string }[];
+  /** Render `items` as a numbered list rather than bullets. */
+  ordered?: boolean;
   /** Small print inside the box. */
   note?: string;
   /** Override the tone's default header icon. Set this whenever the default
@@ -97,6 +100,12 @@ export type Stage = {
   icon: IconName;
   body?: string[];
   bullets?: string[];
+  /** Render `bullets` as a numbered list — the document numbers its document
+      checklists, and clients read those numbers back to agents. */
+  bulletsOrdered?: boolean;
+  /** Boxes printed between the bullets and `bodyAfter` — the document puts the
+      Indian Female ECR cash note there, ahead of the closing paragraph. */
+  midCallouts?: Callout[];
   /** Paragraphs printed after the bullets. */
   bodyAfter?: string[];
   callouts?: Callout[];
@@ -174,42 +183,98 @@ const VISA_7_BUSINESS_DAYS =
   "Visa processing typically takes up to 7 business days after the government accepts the " +
   "submitted documents.";
 
-/** The two authorities that attest a Good Conduct Certificate. Every mention of
-    GCC attestation names both, for every nationality — a client who is told only
-    "attested" has no way to know what to ask their agent for. Hoisted so the
-    wording can never drift between guides. */
-export const MOFA_EMBASSY = "(Ministry of Foreign Affairs & UAE Embassy)";
+const FLIGHT_LEAD_VISA_ISSUED =
+  "Once the entry visa is issued, we will share it with you and coordinate to confirm your " +
+  "preferred travel date and arrange the flight booking.";
 
-/** The attested-GCC line for a Required Documents checklist. */
-const ATTESTED_GCC_DOC = `Attested Good Conduct Certificate ${MOFA_EMBASSY}`;
+/* ---------------------------- the documents stage ------------------------- */
 
-/** "Passport copy + face photo" — the minimum document set on most tabs. */
+/**
+ * Most guides now open with the same stage: a numbered checklist of what the
+ * client has to send us, followed by the Good Conduct Certificate explainers.
+ * The document numbers these lists, and clients read the numbers back to agents
+ * on the phone, so they render as an ordered list.
+ */
+const DOCS_INTRO =
+  "To begin processing your {role}'s entry visa, we'll need the following from you:";
+
 const PASSPORT_AND_PHOTO: Bullet[] = [
   { text: "{Role}'s Passport Copy" },
   { text: "{Role}'s Face Photo" },
 ];
 
-const GCC_INTRO_ATTESTED =
-  "Before the visa application can be initiated, your {role} must obtain a Good Conduct " +
-  "Certificate confirming {subj} has no criminal record. This certificate must then be " +
-  "officially attested first by the Ministry of Foreign Affairs, then by the UAE Embassy.";
+/** Checklist line for the nationalities whose GCC must arrive already attested. */
+const ATTESTED_GCC_ITEM: Bullet = { text: "Attested Good Conduct Certificate (GCC)" };
+/** …and for the ones where the document asks only for the certificate itself. */
+const PLAIN_GCC_ITEM: Bullet = { text: "Good Conduct Certificate (GCC)" };
 
-const GCC_INTRO_MANDATORY =
-  "Before the visa application can be initiated, your {role} must obtain a Good Conduct " +
-  "Certificate confirming {subj} has no criminal record, attested by the Ministry of Foreign " +
-  "Affairs & UAE Embassy. This is a mandatory requirement for all {role}s.";
-
-/** Required-documents box for the "we obtain the attested GCC" tabs. */
-const gccDocuments = (note: string): Callout => ({
-  tone: "documents",
-  title: "Required Documents",
-  items: [...PASSPORT_AND_PHOTO, { text: ATTESTED_GCC_DOC }],
-  note,
-  // The note is a promise that WE handle the attestation, not a warning. Also
-  // avoids a second shield: both guides using this helper already badge their
-  // GCC stage with one.
-  noteIcon: "check",
+const requiredDocsStage = (opts: {
+  sourceLabel: string;
+  title?: string;
+  intro?: string;
+  items: Bullet[];
+  callouts?: Callout[];
+  parallel?: string;
+  docNote?: string;
+}): Stage => ({
+  sourceLabel: opts.sourceLabel,
+  title: opts.title ?? "Required Documents to Process the {Role}'s Visa",
+  icon: "clipboard",
+  body: [opts.intro ?? DOCS_INTRO],
+  bullets: opts.items.map((b) => b.text),
+  bulletsOrdered: true,
+  callouts: opts.callouts,
+  ...(opts.parallel ? { parallel: opts.parallel } : {}),
+  ...(opts.docNote ? { docNote: opts.docNote } : {}),
 });
+
+/* ------------------------------ GCC explainers ---------------------------- */
+
+const GCC_ISSUED_BY =
+  "The Good Conduct Certificate is issued by the police station in your {role}'s home country " +
+  "and confirms {subj} has no criminal record.";
+
+const GCC_NEEDS_ATTESTING =
+  " Before it can be used, it must be attested by both the Ministry of Foreign Affairs (MOFA) " +
+  "and the UAE Embassy.";
+
+const GCC_GATES_THE_VISA = "The visa application can only be submitted once the GCC is attested.";
+
+/** "What is the GCC?" — the explainer box. `attested` adds the MOFA + UAE Embassy
+    sentence; the Ugandan and Kenyan tabs deliberately omit it (see DOC_ISSUES). */
+const gccExplainer = (opts: { attested: boolean; extra?: string }): Callout => ({
+  tone: "info",
+  title: "What is the GCC?",
+  icon: "shield",
+  body: [
+    GCC_ISSUED_BY + (opts.attested ? GCC_NEEDS_ATTESTING : ""),
+    ...(opts.extra ? [opts.extra] : []),
+    GCC_GATES_THE_VISA,
+  ],
+});
+
+/** "Don't Have an Attested GCC?" — the free-of-charge offer and its turnaround. */
+const gccOffer = (opts: { title?: string; body: string[] }): Callout => ({
+  tone: "documents",
+  title: opts.title ?? "Don't Have an Attested GCC?",
+  icon: "check",
+  body: opts.body,
+});
+
+/** We run the whole issuance + attestation ourselves. */
+const weHandleItAll = (workingDays: string): string =>
+  "No problem — we'll handle the full issuance and attestation process on your {role}'s " +
+  `behalf, **free of charge**. This takes **${workingDays}** in total.`;
+
+/** We only fetch the certificate (no attestation leg stated). */
+const weObtainIt = (workingDays: string): string =>
+  "No problem — we can obtain it on your {role}'s behalf, **free of charge**. This takes " +
+  `**${workingDays}** in total.`;
+
+/** The green "runs in parallel, so no time is lost" note. */
+const parallelPreDeparture = (country: string): string =>
+  "While this is underway, your {role} can begin Pre-Departure Processing (Section 3) in " +
+  `parallel through our partner agency in ${country}, so no time is lost.`;
 
 /* ═══════════════════════════════════════════════════════════════════════════
    KNOWN DEFECTS IN THE SOURCE DOCUMENT
@@ -218,6 +283,12 @@ const gccDocuments = (note: string): Callout => ({
    facts in a client-facing legal/financial document is worse than reproducing a
    flaw we have flagged. Each item is also attached to its stage as `docNote`
    and shown on /debug. Fix upstream, then update this file.
+
+   Resolved in the current revision, kept here as a record: the Kenyan and
+   Cameroonian tabs no longer duplicate a stage number and no longer contradict
+   their own headings (both now say 7 business days throughout), and the
+   Cameroonian "attested in Nigeria" line turned out to be deliberate — the tab
+   now explains there is no UAE Embassy in Cameroon.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export const DOC_ISSUES: { guide: ServiceGuide; issue: string }[] = [
@@ -230,24 +301,30 @@ export const DOC_ISSUES: { guide: ServiceGuide; issue: string }[] = [
   },
   {
     guide: "nepali-outside-nepal",
-    issue: 'Section numbering skips 03: stages run 01, 02, then "Our Guarantee to You" as 04.',
+    issue: "Section numbering skips 02: the stages run 01, 03, 04, then Guarantee as 05.",
   },
   {
     guide: "sri-lankan-in-sri-lanka",
     issue: 'Two stages are both numbered "03" (Pre-Departure Processing and Flight Booking).',
   },
   {
-    guide: "kenyan",
+    guide: "ugandan",
     issue:
-      'Two stages are both numbered "02"; and the Travel & Visa heading says "(7 Days)" while ' +
-      'its body says "up to 10 business days".',
+      'The "What is the GCC?" box says the visa can only be submitted "once the GCC is ' +
+      'attested" but, unlike every other tab, never says by whom — the Ministry of Foreign ' +
+      "Affairs + UAE Embassy sentence is missing. Left as written rather than assumed.",
   },
   {
-    guide: "cameroonian",
+    guide: "ugandan",
     issue:
-      'Two stages are both numbered "02"; the Travel & Visa heading says "(7 Days)" while its ' +
-      'body says "up to 10 business days"; and the GCC is said to be attested "in Nigeria", ' +
-      "which for a Cameroonian file is presumably meant to be Cameroon.",
+      "Stage durations sum to 17 working days (7 GCC + 7 visa + 3 flight) but the Timeline at " +
+      "a Glance says ~15 business days.",
+  },
+  {
+    guide: "kenyan",
+    issue:
+      'Same as Ugandan: "once the GCC is attested" with no attesting authority named, while ' +
+      "the other tabs name the Ministry of Foreign Affairs and the UAE Embassy.",
   },
   {
     guide: "filipina-philippines",
@@ -256,8 +333,8 @@ export const DOC_ISSUES: { guide: ServiceGuide; issue: string }[] = [
   {
     guide: "indian-male-ecr",
     issue:
-      'Written in he/his but the flight line still says "within 3 days of her being ready to ' +
-      'travel". Fixed here by construction — pronouns interpolate from {obj}.',
+      "Written for a male worker, but the flight and exit-approval stages still say " +
+      '"her"/"she". Fixed here by construction — every pronoun interpolates from {obj}/{subj}.',
   },
 ];
 
@@ -287,28 +364,25 @@ const FILIPINA_PHILIPPINES: GuideContent = {
       callouts: [
         {
           tone: "documents",
-          title: "Required Documents to apply for the entry permit",
+          title:
+            "The following documents are needed from the sponsor to apply for the entry permit",
+          ordered: true,
           items: [
-            { text: "Marriage Certificate attested by the embassy." },
+            { text: "**Marriage Certificate attested by the embassy.**" },
             {
-              text: "Proof of Income: (Both Required)",
+              text: "**Proof of Income: (Both Required)**",
               sub: [
                 "Salary certificate (Above AED 25,000) or Trade license copy",
                 "A 3-month bank statement",
               ],
             },
             {
-              text: "Proof of Residency: (Only one is required)",
+              text: "**Proof of Residency: (Only one is required)**",
               sub: ["Recent DEWA bill", "Tenancy contract", "Title deed"],
             },
-            {
-              text: "Personal Documents:",
-              sub: [
-                "Sponsor and spouse's passport & visa copies",
-                "Sponsor's original Emirates ID on both sides",
-                "{Role}'s passport copy and photo",
-              ],
-            },
+            { text: "Sponsor and spouse's passport & visa copies" },
+            { text: "Sponsor's original Emirates ID on both sides" },
+            { text: "{Role}'s passport copy and photo" },
           ],
         },
         {
@@ -319,12 +393,16 @@ const FILIPINA_PHILIPPINES: GuideContent = {
             {
               text:
                 "If this is your first time sponsoring a housemaid, you should visit our " +
-                "maids.cc office with your original Emirates ID to open a MOHRE file.",
+                "maids.cc office with your original Emirates ID to open a **MOHRE file**.",
+              sub: [
+                "**Office hours:** Monday to Friday, 8:00 AM to 5:00 PM.",
+                "**Location:** [View on Google Maps](http://maps.app.goo.gl/NbMbDj9QqZVFEpGd9)",
+              ],
             },
             {
               text:
                 "In cases where the sponsor and the housemaid share the same nationality, a " +
-                "No Blood Relationship Certificate, attested by the MWO, is required.",
+                "**No Blood Relationship Certificate**, attested by the MWO, is required.",
             },
           ],
         },
@@ -430,7 +508,7 @@ const FILIPINA_PHILIPPINES: GuideContent = {
   glance: {
     body:
       "From the moment your {role} arrives at our accommodation in the Philippines, {subj} " +
-      "will reach your house in under **50 days**.",
+      "will reach your house in under **50 days.**",
   },
 };
 
@@ -444,35 +522,15 @@ const ETHIOPIAN_IN_ETHIOPIA: GuideContent = {
     "This document has been prepared to provide you with clear understanding of each stage " +
     "involved in bringing your {role} from Ethiopia to the UAE.",
   stages: [
-    {
+    requiredDocsStage({
       sourceLabel: "01",
-      title: "Good Conduct Certificate Issuance & Attestation – Ethiopia",
-      duration: "39 days",
-      icon: "shield",
-      body: [GCC_INTRO_ATTESTED],
+      items: [...PASSPORT_AND_PHOTO, ATTESTED_GCC_ITEM],
       callouts: [
-        {
-          tone: "documents",
-          title: "Required Documents",
-          items: [...PASSPORT_AND_PHOTO, { text: ATTESTED_GCC_DOC }],
-        },
-        {
-          tone: "breakdown",
-          title: "Good Conduct Certificate Process Breakdown",
-          icon: "certificate",
-          rows: [
-            { label: "GCC Issuance", value: "7 working days" },
-            {
-              label: `GCC Attestation ${MOFA_EMBASSY}`,
-              value: "32 working days",
-            },
-          ],
-        },
+        gccExplainer({ attested: true }),
+        gccOffer({ body: [weHandleItAll("39 working days")] }),
       ],
-      parallel:
-        "In parallel, your {role} will initiate the Pre-Departure Processing (See section 3) " +
-        "through our partner agency in Ethiopia.",
-    },
+      parallel: parallelPreDeparture("Ethiopia"),
+    }),
     {
       sourceLabel: "02",
       title: "Travel & Visa Processing",
@@ -540,23 +598,21 @@ const ETHIOPIAN_OUTSIDE_ETHIOPIA: GuideContent = {
     "This document has been prepared to provide you with a clear understanding of each stage " +
     "involved in bringing your {role} to the UAE.",
   stages: [
-    {
+    requiredDocsStage({
       sourceLabel: "01",
-      title: "Good Conduct Certificate Issuance & Attestation – Ethiopia",
-      duration: "46 days",
-      icon: "shield",
-      body: [
-        "Before the visa application can be initiated, your {role} must obtain an Attested " +
-          "Good Conduct Certificate confirming {subj} has no criminal record, attested by the " +
-          "Ministry of Foreign Affairs & UAE Embassy. This is a mandatory requirement for all " +
-          "{role}s.",
-      ],
+      title: "Documents Required to Process the {Role}'s Visa",
+      intro:
+        "The following documents are required from you to process your {role}'s UAE entry visa:",
+      items: [...PASSPORT_AND_PHOTO, ATTESTED_GCC_ITEM],
       callouts: [
-        {
-          tone: "documents",
-          title: "Required Documents",
-          items: [...PASSPORT_AND_PHOTO, { text: ATTESTED_GCC_DOC }],
-        },
+        gccExplainer({ attested: true }),
+        gccOffer({
+          title: "Don't Have a GCC? We'll Arrange It for Free",
+          body: [
+            "We'll handle the full issuance and attestation process on your {role}'s behalf. " +
+              "This takes **46 working days** in total.",
+          ],
+        }),
         {
           // Ordered sequence, not a duration table: each step only starts once the
           // previous one is done, so it reads as a stepper.
@@ -565,25 +621,24 @@ const ETHIOPIAN_OUTSIDE_ETHIOPIA: GuideContent = {
           icon: "fingerprint",
           rows: [
             {
-              label: "{Role} visits the Ethiopian embassy for biometrics & power of attorney",
-              value: "1 visit, no appointment needed",
-            },
-            {
-              label: "Our agent guides {obj} through it and shares sample documents beforehand",
+              label:
+                "Your {role} visits the Ethiopian embassy for biometrics and Power of Attorney " +
+                "— a single visit, no appointment needed. Our agent guides {obj} through the " +
+                "process and shares sample documents with {obj} in advance.",
             },
             {
               label: "{Subj} sends the hardcopy documents to our agency via DHL",
               value: "7 working days",
             },
-            { label: "GCC Issuance", value: "7 working days" },
+            { label: "GCC issuance", value: "7 working days" },
             {
-              label: `GCC Attestation ${MOFA_EMBASSY}`,
+              label: "GCC attestation with MOFA and the UAE Embassy",
               value: "32 working days",
             },
           ],
         },
       ],
-    },
+    }),
     {
       sourceLabel: "02",
       title: "Travel & Visa Processing",
@@ -596,9 +651,7 @@ const ETHIOPIAN_OUTSIDE_ETHIOPIA: GuideContent = {
     flightStage({
       sourceLabel: "03",
       duration: "3 Days",
-      lead:
-        "Once the entry visa is issued, we will share it with you and coordinate to confirm " +
-        "your preferred travel date and arrange the flight booking.",
+      lead: FLIGHT_LEAD_VISA_ISSUED,
     }),
   ],
   glance: {
@@ -618,32 +671,15 @@ const SRI_LANKAN_IN_SRI_LANKA: GuideContent = {
     "This document has been prepared to provide you with clear understanding of each stage " +
     "involved in bringing your {role} from Sri Lanka to the UAE.",
   stages: [
-    {
+    requiredDocsStage({
       sourceLabel: "01",
-      title: "Good Conduct Certificate Issuance & Attestation – Sri Lanka",
-      duration: "39 days",
-      icon: "shield",
-      body: [GCC_INTRO_ATTESTED],
+      items: [...PASSPORT_AND_PHOTO, ATTESTED_GCC_ITEM],
       callouts: [
-        {
-          tone: "documents",
-          title: "Required Documents",
-          items: [...PASSPORT_AND_PHOTO, { text: ATTESTED_GCC_DOC }],
-        },
-        {
-          tone: "breakdown",
-          title: "GCC Process Breakdown",
-          icon: "certificate",
-          rows: [
-            { label: "GCC Issuance", value: "25 working days" },
-            { label: `GCC Attestation ${MOFA_EMBASSY}`, value: "14 working days" },
-          ],
-        },
+        gccExplainer({ attested: true }),
+        gccOffer({ body: [weHandleItAll("39 working days")] }),
       ],
-      parallel:
-        "In parallel, your {role} will initiate the Pre-Departure Processing (See section 3) " +
-        "through our partner agency in Sri Lanka.",
-    },
+      parallel: parallelPreDeparture("Sri Lanka"),
+    }),
     {
       sourceLabel: "02",
       title: "Travel & Visa Processing",
@@ -710,38 +746,30 @@ const UGANDAN: GuideContent = {
     "This document has been prepared to provide you with a clear understanding of each stage " +
     "involved in bringing your {role} to the UAE.",
   stages: [
-    {
+    requiredDocsStage({
       sourceLabel: "01",
-      title: "Travel & Visa Processing",
-      duration: "12 Days",
-      icon: "permit",
+      items: [...PASSPORT_AND_PHOTO, PLAIN_GCC_ITEM],
       callouts: [
-        {
-          tone: "documents",
-          title: "Required Documents",
-          items: [
-            ...PASSPORT_AND_PHOTO,
-            { text: "**Good Conduct Certificate:** Acquired from the police station." },
-          ],
-          noteIcon: "shield",
-          note:
-            "We can obtain the Attested Good Conduct Certificate on your {role}'s behalf and " +
-            "have it attested at the Ministry of Foreign Affairs & UAE Embassy, free of charge. " +
-            "This typically takes **5** working days.",
-        },
+        // The Ugandan tab omits the MOFA + UAE Embassy sentence the other tabs
+        // carry, while still gating the visa on attestation. See DOC_ISSUES.
+        gccExplainer({ attested: false }),
+        gccOffer({ body: [weObtainIt("7 working days")] }),
       ],
+      docNote:
+        'The GCC box gates the visa on the certificate being "attested" but never names the ' +
+        "attesting authority, unlike every other tab.",
+    }),
+    {
+      sourceLabel: "02",
+      title: "Travel & Visa Processing",
+      duration: "7 days",
+      icon: "permit",
       body: [
         "Once we receive the required documents, we will initiate the visa application. " +
           VISA_7_BUSINESS_DAYS,
       ],
     },
-    flightStage({
-      sourceLabel: "02",
-      duration: "3 Days",
-      lead:
-        "Once the entry visa is issued, we will share it with you and coordinate to confirm " +
-        "your preferred travel date and arrange the flight booking.",
-    }),
+    flightStage({ sourceLabel: "03", duration: "3 Days", lead: FLIGHT_LEAD_VISA_ISSUED }),
   ],
   glance: {
     body:
@@ -752,24 +780,16 @@ const UGANDAN: GuideContent = {
 
 /* ------------------------------ 6. Nepali in Nepal ------------------------ */
 
-/** Shared by both Nepali guides — the document prints an identical box on each. */
-const NEPAL_DOCUMENTS: Callout = {
-  tone: "documents",
-  title: "Required Documents",
-  items: [
-    { text: "Passport" },
-    { text: "Profile Picture" },
-    {
-      text:
-        "**Good Conduct Certificate (GCC)**: Acquired from the police stations and must be " +
-        "attested first by the Ministry of Foreign Affairs, then by the UAE Embassy.",
-    },
-  ],
-  note:
-    "If the {role} does not have a GCC, issuing and attesting it typically takes 15 " +
-    "business days.",
-  noteIcon: "shield",
-};
+/** Both Nepali tabs print an identical stage 01. */
+const nepalDocsStage = (sourceLabel: string): Stage =>
+  requiredDocsStage({
+    sourceLabel,
+    items: [...PASSPORT_AND_PHOTO, ATTESTED_GCC_ITEM],
+    callouts: [
+      gccExplainer({ attested: true }),
+      gccOffer({ body: [weHandleItAll("15 working days")] }),
+    ],
+  });
 
 const NEPALI_IN_NEPAL: GuideContent = {
   slug: "nepali-in-nepal",
@@ -779,19 +799,19 @@ const NEPALI_IN_NEPAL: GuideContent = {
     "This document has been prepared to provide you with clear understanding of each stage " +
     "involved in bringing your {role} from Nepal to the UAE.",
   stages: [
+    nepalDocsStage("01"),
     {
-      sourceLabel: "01",
+      sourceLabel: "02",
       title: "Travel & Visa Processing",
-      duration: "22 Days",
+      duration: "7 Days",
       icon: "permit",
-      callouts: [NEPAL_DOCUMENTS],
       body: [
         "Once we receive the required documents, we will initiate the visa application. " +
           VISA_7_BUSINESS_DAYS,
       ],
     },
     {
-      sourceLabel: "02",
+      sourceLabel: "03",
       title: "POE Process — Nepal",
       duration: "15 Days",
       icon: "stamp",
@@ -802,7 +822,7 @@ const NEPALI_IN_NEPAL: GuideContent = {
       ],
     },
     flightStage({
-      sourceLabel: "03",
+      sourceLabel: "04",
       duration: "3 Days",
       lead:
         "Once the POE is approved, we will coordinate with you to confirm the preferred travel " +
@@ -826,19 +846,21 @@ const NEPALI_OUTSIDE_NEPAL: GuideContent = {
     "This document has been prepared to provide you with clear understanding of each stage " +
     "involved in bringing your Nepali {role} to the UAE.",
   stages: [
+    nepalDocsStage("01"),
     {
-      sourceLabel: "01",
+      // The document labels this stage 03 and has no 02 at all.
+      sourceLabel: "03",
       title: "Travel & Visa Processing",
-      duration: "22 Days",
+      duration: "7 Days",
       icon: "permit",
-      callouts: [NEPAL_DOCUMENTS],
       body: [
         "Once we receive the required documents, we will initiate the visa application. " +
           VISA_7_BUSINESS_DAYS,
       ],
+      docNote: 'The document labels this stage "03"; there is no stage "02".',
     },
     flightStage({
-      sourceLabel: "02",
+      sourceLabel: "04",
       duration: "3 Days",
       // Verbatim from the document, including the reference to a POE stage that
       // does not exist in this guide. See DOC_ISSUES.
@@ -859,6 +881,19 @@ const NEPALI_OUTSIDE_NEPAL: GuideContent = {
 
 /* ------------------------------ 8. Indian — ECNR -------------------------- */
 
+/** The Indian tabs fold the checklist into the visa stage instead of giving it
+    one of its own, so they share this opening. */
+const indianVisaStage = (opts: { lead: string }): Stage => ({
+  sourceLabel: "01",
+  title: "Travel & Visa Processing",
+  duration: "7 Days",
+  icon: "permit",
+  body: [DOCS_INTRO],
+  bullets: PASSPORT_AND_PHOTO.map((b) => b.text),
+  bulletsOrdered: true,
+  bodyAfter: [opts.lead + " " + VISA_7_BUSINESS_DAYS],
+});
+
 const INDIAN_ECNR: GuideContent = {
   slug: "indian-ecnr",
   tabTitle: "Service Guide - Indian - ECNR",
@@ -867,16 +902,9 @@ const INDIAN_ECNR: GuideContent = {
     "This document has been prepared to provide you with a clear understanding of each stage " +
     "involved in bringing your {role} from India to the UAE.",
   stages: [
-    {
-      sourceLabel: "01",
-      title: "Travel & Visa Processing",
-      icon: "permit",
-      callouts: [{ tone: "documents", title: "Required Documents", items: PASSPORT_AND_PHOTO }],
-      body: [
-        "Once we receive the required documents, we will apply for {poss} visa. " +
-          VISA_7_BUSINESS_DAYS,
-      ],
-    },
+    indianVisaStage({
+      lead: "Once we receive the required documents, we will apply for {poss} visa.",
+    }),
     flightStage({
       sourceLabel: "02",
       duration: "3 Days",
@@ -902,32 +930,35 @@ const INDIAN_MALE_ECR: GuideContent = {
     "This document has been prepared to provide you with a clear understanding of each stage " +
     "involved in bringing your {role} from India to the UAE.",
   stages: [
+    indianVisaStage({
+      lead: "Once we receive your {role}'s documents, we will apply for {poss} visa.",
+    }),
     {
-      sourceLabel: "01",
-      title: "Travel & Visa Processing",
-      icon: "permit",
-      callouts: [{ tone: "documents", title: "Required Documents", items: PASSPORT_AND_PHOTO }],
+      // The booking now comes BEFORE the exit clearance: the airline reservation
+      // is an input to the OK to Board application.
+      sourceLabel: "02",
+      title: "Flight Booking",
+      duration: "7 Days",
+      icon: "plane",
       body: [
-        "Once we receive your {role}'s documents, we will apply for {poss} visa. " +
-          VISA_7_BUSINESS_DAYS,
+        "Once the visa is issued, we'll coordinate with you to confirm your preferred travel " +
+          "date and book the flight.",
+        "Please note the travel date will need a 7 business days' lead time, since the airline " +
+          "booking is required before we can apply for your {role}'s exit clearance.",
       ],
     },
     {
-      sourceLabel: "02",
-      title: "Pre-Departure — Exit Approval",
+      sourceLabel: "03",
+      title: "Pre-Departure Exit Approval & Arrival",
+      duration: "10 Days",
       icon: "stamp",
       body: [
-        "Once your {role}'s visa is issued, we will apply for {poss} travel clearance and OK to " +
-          "Board. This process typically takes 10 business days.",
+        "Once your {role}'s flight is booked, we'll apply for {poss} travel clearance and OK to " +
+          "Board based on the confirmed booking. This process typically takes 10 days and must " +
+          "be completed before {subj} can travel.",
+        AIRPORT_PICKUP,
       ],
     },
-    flightStage({
-      sourceLabel: "03",
-      duration: "3 Days",
-      lead:
-        "Once the OK to Board is issued, we will contact you to confirm your preferred travel " +
-        "date and arrange the flight booking.",
-    }),
   ],
   glance: {
     body:
@@ -947,35 +978,47 @@ const INDIAN_FEMALE_ECR: GuideContent = {
     "involved in bringing your {role} from India to the UAE.",
   stages: [
     {
-      sourceLabel: "01",
-      title: "Travel & Visa Processing",
-      icon: "permit",
-      callouts: [
+      ...indianVisaStage({
+        lead: "Once we receive the required documents, we will apply for {poss} entry visa.",
+      }),
+      midCallouts: [
         {
-          tone: "documents",
-          title: "Required Documents",
-          items: PASSPORT_AND_PHOTO,
-          noteIcon: "money",
-          note:
-            "**Note:** Please also make sure **AED 2,000** in cash is ready for your {role} to " +
-            "carry with {obj}. {Subj}'ll need to present this to UAE immigration on arrival as " +
-            "proof of funds.",
+          tone: "info",
+          title: "Note",
+          icon: "money",
+          body: [
+            "Please also make sure **AED 2,000** in cash is ready for your {role} to carry with " +
+              "{obj}. {Subj}'ll need to present this to UAE immigration on arrival as proof of " +
+              "funds.",
+          ],
         },
       ],
+    },
+    {
+      sourceLabel: "02",
+      title: "Flight Booking & Arrival",
+      icon: "plane",
       body: [
-        "Once we receive the required documents, we will apply for {poss} entry visa. " +
-          VISA_7_BUSINESS_DAYS,
+        "Once the visa is issued, we'll coordinate with you to confirm your preferred travel " +
+          "date and book the flight.",
+        "Please note the travel date will need to be set at least 7 days out, since the airline " +
+          "booking is required before we can apply for your {role}'s exit clearance.",
       ],
     },
-    flightStage({
-      sourceLabel: "02",
-      duration: "3 Days",
-      lead:
-        "Once the tourist visa is issued, we will share it with you and coordinate to confirm " +
-        "your preferred travel date and arrange the flight booking.",
-    }),
     {
       sourceLabel: "03",
+      title: "Pre-Departure Exit Approval & Arrival",
+      duration: "7 Days",
+      icon: "stamp",
+      body: [
+        "Once your {role}'s flight is booked, we'll apply for {poss} travel clearance and OK to " +
+          "Board based on the confirmed booking. This process typically takes 7 days and must " +
+          "be completed before {subj} can travel.",
+        AIRPORT_PICKUP,
+      ],
+    },
+    {
+      sourceLabel: "04",
       title: "Post-Arrival",
       icon: "refresh",
       body: [
@@ -1001,20 +1044,17 @@ const KENYAN: GuideContent = {
     "This document has been prepared to provide you with a clear understanding of each stage " +
     "involved in bringing your {role} to the UAE.",
   stages: [
-    {
+    requiredDocsStage({
       sourceLabel: "01",
-      title: "Good Conduct Certificate Issuance & Attestation – Kenya",
-      duration: "15 Days",
-      icon: "shield",
-      body: [GCC_INTRO_MANDATORY],
+      items: [...PASSPORT_AND_PHOTO, PLAIN_GCC_ITEM],
       callouts: [
-        gccDocuments(
-          "We can obtain the Attested Good Conduct Certificate on your {role}'s behalf and have " +
-            `it attested at the Ministry of Foreign Affairs & UAE Embassy, free of charge. ` +
-            "This typically takes **15** days.",
-        ),
+        gccExplainer({ attested: false }),
+        gccOffer({ body: [weObtainIt("15 working days")] }),
       ],
-    },
+      docNote:
+        'The GCC box gates the visa on the certificate being "attested" but never names the ' +
+        "attesting authority, unlike every other tab.",
+    }),
     {
       sourceLabel: "02",
       title: "Travel & Visa Processing",
@@ -1022,21 +1062,10 @@ const KENYAN: GuideContent = {
       icon: "permit",
       body: [
         "Once the Good Conduct Certificate is issued, we will initiate the visa application. " +
-          "Visa processing typically takes up to 10 business days after the government accepts " +
-          "the submitted documents.",
+          VISA_7_BUSINESS_DAYS,
       ],
-      docNote:
-        'Heading says "(7 Days)" but the body says "up to 10 business days" — the two ' +
-        "disagree in the source document.",
     },
-    flightStage({
-      sourceLabel: "02",
-      duration: "3 Days",
-      lead:
-        "Once the entry visa is issued, we will share it with you and coordinate to confirm " +
-        "your preferred travel date and arrange the flight booking.",
-      docNote: 'The document numbers this stage "02" as well — a duplicate of Travel & Visa.',
-    }),
+    flightStage({ sourceLabel: "03", duration: "3 Days", lead: FLIGHT_LEAD_VISA_ISSUED }),
   ],
   glance: {
     body:
@@ -1055,23 +1084,19 @@ const CAMEROONIAN: GuideContent = {
     "This document has been prepared to provide you with a clear understanding of each stage " +
     "involved in bringing your {role} to the UAE.",
   stages: [
-    {
+    requiredDocsStage({
       sourceLabel: "01",
-      title: "Good Conduct Certificate Issuance & Attestation – Cameroon",
-      duration: "25 Days",
-      icon: "shield",
-      body: [GCC_INTRO_MANDATORY],
+      items: [...PASSPORT_AND_PHOTO, ATTESTED_GCC_ITEM],
       callouts: [
-        gccDocuments(
-          "We can obtain the Attested Good Conduct Certificate on your {role}'s behalf and have " +
-            "it attested at the Ministry of Foreign Affairs & UAE Embassy in Nigeria, free of " +
-            "charge. This typically takes **25** working days.",
-        ),
+        gccExplainer({
+          attested: true,
+          extra:
+            "Since there is no UAE Embassy in Cameroon, this attestation is carried out at the " +
+            "UAE Embassy in Nigeria.",
+        }),
+        gccOffer({ body: [weHandleItAll("25 working days")] }),
       ],
-      docNote:
-        'Says the certificate is attested "in Nigeria" — for a Cameroonian file this is ' +
-        "presumably meant to be Cameroon.",
-    },
+    }),
     {
       sourceLabel: "02",
       title: "Travel & Visa Processing",
@@ -1079,21 +1104,10 @@ const CAMEROONIAN: GuideContent = {
       icon: "permit",
       body: [
         "Once the Good Conduct Certificate is issued, we will initiate the visa application. " +
-          "Visa processing typically takes up to 10 business days after the government accepts " +
-          "the submitted documents.",
+          VISA_7_BUSINESS_DAYS,
       ],
-      docNote:
-        'Heading says "(7 Days)" but the body says "up to 10 business days" — the two ' +
-        "disagree in the source document.",
     },
-    flightStage({
-      sourceLabel: "02",
-      duration: "3 Days",
-      lead:
-        "Once the entry visa is issued, we will share it with you and coordinate to confirm " +
-        "your preferred travel date and arrange the flight booking.",
-      docNote: 'The document numbers this stage "02" as well — a duplicate of Travel & Visa.',
-    }),
+    flightStage({ sourceLabel: "03", duration: "3 Days", lead: FLIGHT_LEAD_VISA_ISSUED }),
   ],
   glance: {
     body:
@@ -1102,7 +1116,42 @@ const CAMEROONIAN: GuideContent = {
   },
 };
 
-/* ---------------------------------- 13. Other ----------------------------- */
+/* ------------------------ 13 + 14. Other and Visa Only -------------------- */
+
+/** Identical on both tabs: the nationalities UAE immigration wants a GCC for. */
+const GCC_COUNTRY_NOTE: Callout = {
+  tone: "info",
+  title: "Please Note — Good Conduct Certificate",
+  icon: "shield",
+  body: [
+    "The Good Conduct Certificate is issued by the **police station** in your {role}'s home " +
+      "country and confirms {subj} has no criminal record.",
+    "UAE immigration authorities require a Good Conduct Certificate as part of the visa " +
+      "process for {role}s from the following nationalities:",
+    "**Afghanistan, Algeria, Bhutan, Bulgaria, Cameroon, Cuba, Egypt, Ethiopia, Gambia, " +
+      "Ghana, Iraq, Lebanon, Lithuania, Mexico, Morocco, Mozambique, Nepal, Pakistan, Senegal, " +
+      "Somalia, Sri Lanka, Syria, and Tonga.**",
+    "Before the GCC can be used for the visa application, it must be attested by both the " +
+      "Ministry of Foreign Affairs (MOFA) and the UAE Embassy.",
+  ],
+};
+
+const GCC_ISSUED_VISA_STAGE: Stage = {
+  sourceLabel: "02",
+  title: "Travel & Visa Processing",
+  duration: "7 Days",
+  icon: "permit",
+  body: [
+    "Once the Good Conduct Certificate is issued, we will initiate the visa application. " +
+      VISA_7_BUSINESS_DAYS,
+  ],
+};
+
+const ARRIVAL_15_DAYS = {
+  body:
+    "From the moment your {role}'s documents are approved, {subj} will arrive at your " +
+    "doorstep in under **15 Business Days.**",
+};
 
 const OTHER: GuideContent = {
   slug: "other",
@@ -1112,48 +1161,16 @@ const OTHER: GuideContent = {
     "This document has been prepared to provide you with a clear understanding of each stage " +
     "involved in bringing your {role} to the UAE.",
   stages: [
-    {
+    requiredDocsStage({
       sourceLabel: "01",
-      title: "Travel & Visa Processing",
-      icon: "permit",
-      callouts: [
-        { tone: "documents", title: "Required Documents", items: PASSPORT_AND_PHOTO },
-        {
-          tone: "info",
-          title: "Please Note — Good Conduct Certificate",
-          icon: "shield",
-          body: [
-            "The **UAE immigration authorities** require a **Good Conduct Certificate** as part " +
-              "of the visa process for nationals of the following countries: Afghanistan, " +
-              "Algeria, Bhutan, Bulgaria, Cameroon, Cuba, Egypt, Ethiopia, Gambia, Ghana, Iraq, " +
-              "Lebanon, Lithuania, Mexico, Morocco, Mozambique, Nepal, Pakistan, Senegal, " +
-              "Somalia, Sri Lanka, Syria, and Tonga.",
-            "The Good Conduct Certificate must be attested by the **Ministry of Foreign " +
-              "Affairs** (MOFA) and the **UAE Embassy** in the country of issuance.",
-          ],
-        },
-      ],
-      body: [
-        "Once we receive your {role}'s documents, we will apply for {poss} visa. " +
-          VISA_7_BUSINESS_DAYS,
-      ],
-    },
-    flightStage({
-      sourceLabel: "02",
-      duration: "3 Days",
-      lead:
-        "Once the entry visa is issued, we will share it with you and coordinate to confirm " +
-        "your preferred travel date and arrange the flight booking.",
+      items: PASSPORT_AND_PHOTO,
+      callouts: [GCC_COUNTRY_NOTE],
     }),
+    GCC_ISSUED_VISA_STAGE,
+    flightStage({ sourceLabel: "03", duration: "3 Days", lead: FLIGHT_LEAD_VISA_ISSUED }),
   ],
-  glance: {
-    body:
-      "From the moment your {role}'s documents are approved, {subj} will arrive at your " +
-      "doorstep in under **15 Business Days.**",
-  },
+  glance: ARRIVAL_15_DAYS,
 };
-
-/* ----------------------------- 14. Visa Only Package ---------------------- */
 
 const VISA_ONLY: GuideContent = {
   slug: "visa-only",
@@ -1163,30 +1180,16 @@ const VISA_ONLY: GuideContent = {
     "This document has been prepared to provide you with a clear understanding of each stage " +
     "involved in bringing your {role} to the UAE.",
   stages: [
-    {
+    requiredDocsStage({
       sourceLabel: "01",
-      title: "Visa Processing",
-      icon: "permit",
-      callouts: [
-        { tone: "documents", title: "Required Documents", items: PASSPORT_AND_PHOTO },
-        {
-          tone: "info",
-          title: "Please Note — Good Conduct Certificate",
-          icon: "shield",
-          body: [
-            "In some cases, UAE immigration may require a **Good Conduct Certificate** as part " +
-              "of the visa process.",
-            "If applicable, we will notify you and request it accordingly.",
-          ],
-        },
-      ],
-      body: [
-        "Once we receive your {role}'s documents, we will apply for {poss} visa. Processing " +
-          "typically takes 5–7 business days after approval.",
-      ],
-    },
+      items: PASSPORT_AND_PHOTO,
+      callouts: [GCC_COUNTRY_NOTE],
+    }),
+    GCC_ISSUED_VISA_STAGE,
     {
-      sourceLabel: "02",
+      // Visa-only stops at handing the visa over — no 3-day booking window and no
+      // airport pickup, because the client books their own flight.
+      sourceLabel: "03",
       title: "Flight Booking & Arrival",
       duration: "3 Days",
       icon: "plane",
@@ -1196,11 +1199,7 @@ const VISA_ONLY: GuideContent = {
       ],
     },
   ],
-  glance: {
-    body:
-      "From the moment your {role}'s documents are approved, the visa issuance will take **up " +
-      "to 5 to 7 business days.**",
-  },
+  glance: ARRIVAL_15_DAYS,
 };
 
 /* ------------------------------- the registry ----------------------------- */

@@ -226,24 +226,41 @@ const ICONS: Record<IconName, (p: IconProps) => ReactNode> = {
 /* ------------------------------- rich text -------------------------------- */
 
 /**
- * Interpolate {placeholders} from the terms vocabulary, then render the source
- * document's `**bold**` emphasis as <strong>. Split on the delimiter rather than
- * parsing markdown — the content is ours, and the only markup it uses is bold.
+ * Interpolate {placeholders} from the terms vocabulary, then render the two bits
+ * of markup the content uses: `**bold**` and `[label](url)` links. Split on the
+ * delimiters rather than pulling in a markdown parser — the content is ours, so
+ * the grammar is known and closed.
  */
+const RICH_TOKEN = /(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g;
+
 function Rich({ text, t }: { text: string; t: Terms }) {
-  const filled = fill(text, t);
-  const parts = filled.split(/(\*\*[^*]+\*\*)/g);
+  const parts = fill(text, t).split(RICH_TOKEN);
   return (
     <>
-      {parts.map((part, i) =>
-        part.startsWith("**") && part.endsWith("**") && part.length > 4 ? (
-          <strong key={i} className="font-bold text-[#111827]">
-            {part.slice(2, -2)}
-          </strong>
-        ) : (
-          part
-        ),
-      )}
+      {parts.map((part, i) => {
+        if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+          return (
+            <strong key={i} className="font-bold text-[#111827]">
+              {part.slice(2, -2)}
+            </strong>
+          );
+        }
+        const link = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(part);
+        if (link) {
+          return (
+            <a
+              key={i}
+              href={link[2]}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="font-bold text-[#4878BC] underline decoration-[#B9CCE6] underline-offset-2"
+            >
+              {link[1]}
+            </a>
+          );
+        }
+        return part;
+      })}
     </>
   );
 }
@@ -346,14 +363,32 @@ function Paragraph({ text, t }: { text: string; t: Terms }) {
   );
 }
 
-function BulletList({ items, t }: { items: (string | Bullet)[]; t: Terms }) {
+/** Bulleted or numbered. The source document numbers its document checklists —
+    which matters, because a client on the phone to an agent reads item numbers
+    back — so those render as an <ol> with the numbers shown. */
+function BulletList({
+  items,
+  t,
+  ordered = false,
+}: {
+  items: (string | Bullet)[];
+  t: Terms;
+  ordered?: boolean;
+}) {
+  const List = ordered ? "ol" : "ul";
   return (
-    <ul className="mt-2.5 space-y-2">
+    <List className="mt-2.5 space-y-2">
       {items.map((raw, i) => {
         const item: Bullet = typeof raw === "string" ? { text: raw } : raw;
         return (
           <li key={i} className="flex gap-2.5">
-            <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#4878BC]" />
+            {ordered ? (
+              <span className="mt-[1px] w-[1.15rem] shrink-0 text-[14px] font-bold text-[#4878BC] tabular-nums">
+                {i + 1}.
+              </span>
+            ) : (
+              <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#4878BC]" />
+            )}
             <div className="min-w-0 flex-1">
               <span className="text-[15px] leading-relaxed text-[#374151]">
                 <Rich text={item.text} t={t} />
@@ -374,7 +409,7 @@ function BulletList({ items, t }: { items: (string | Bullet)[]; t: Terms }) {
           </li>
         );
       })}
-    </ul>
+    </List>
   );
 }
 
@@ -435,7 +470,9 @@ function CalloutBox({ callout, t }: { callout: Callout; t: Terms }) {
           </p>
         ))}
 
-        {callout.items?.length ? <BulletList items={callout.items} t={t} /> : null}
+        {callout.items?.length ? (
+          <BulletList items={callout.items} t={t} ordered={callout.ordered} />
+        ) : null}
 
         {callout.rows?.length ? (
           callout.tone === "timeline" ? (
@@ -592,7 +629,10 @@ function FeeCard({
 
 function StageBody({ stage, t, emirate }: { stage: Stage; t: Terms; emirate: Emirate | null }) {
   const showDeposit = hasDepositRefund(emirate);
-  const callouts = (stage.callouts ?? []).filter((c) => !c.onlyWithDeposit || showDeposit);
+  const visible = (list: typeof stage.callouts) =>
+    (list ?? []).filter((c) => !c.onlyWithDeposit || showDeposit);
+  const midCallouts = visible(stage.midCallouts);
+  const callouts = visible(stage.callouts);
 
   return (
     <div className="pt-2.5">
@@ -604,7 +644,12 @@ function StageBody({ stage, t, emirate }: { stage: Stage; t: Terms; emirate: Emi
       {stage.body?.map((p, i) => (
         <Paragraph key={i} text={p} t={t} />
       ))}
-      {stage.bullets?.length ? <BulletList items={stage.bullets} t={t} /> : null}
+      {stage.bullets?.length ? (
+        <BulletList items={stage.bullets} t={t} ordered={stage.bulletsOrdered} />
+      ) : null}
+      {midCallouts.map((c, i) => (
+        <CalloutBox key={i} callout={c} t={t} />
+      ))}
       {stage.bodyAfter?.map((p, i) => (
         <Paragraph key={i} text={p} t={t} />
       ))}

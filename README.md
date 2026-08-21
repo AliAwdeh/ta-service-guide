@@ -103,7 +103,8 @@ stages, durations, document callouts, process breakdowns, timeline boxes.
 wording change is a one-line edit in the content file and never touches a component.
 
 Copy uses `{placeholders}` (`{role}`, `{subj}`, `{poss}`, …) filled from one vocabulary, so a
-single string serves a female maid and a male driver. This also fixes a slip in the source
+single string serves a female maid and a male driver. Inline markup is a closed grammar:
+`**bold**` and `[label](url)`. This also fixes a slip in the source
 document, where the Indian Male ECR tab is written in he/his but still says "within 3 days of
 **her** being ready to travel".
 
@@ -139,11 +140,18 @@ whichever guide is on screen. **These never appear on a client page.**
 | Guide                 | Defect                                                                                                                                                                                                                                         |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Nepal Outside Nepal   | Flight stage opens _"Once the POE is approved"_ but this guide has no POE stage — copy-paste from the in-Nepal tab. Every other outside-country tab reads _"Once the entry visa is issued"_. **Needs a decision before this goes to clients.** |
-| Nepal Outside Nepal   | Section numbering skips `03` (runs 01, 02, then Guarantee as 04).                                                                                                                                                                              |
+| Nepal Outside Nepal   | Section numbering skips `02` (runs 01, 03, 04, then Guarantee as 05).                                                                                                                                                                          |
 | SriLanka in Sri Lanka | Two stages both numbered `03`.                                                                                                                                                                                                                 |
-| Kenyan                | Two stages both numbered `02`; heading says _(7 Days)_ while the body says _up to 10 business days_.                                                                                                                                           |
-| Cameroonians          | Two stages both numbered `02`; same 7-vs-10-day contradiction; and the GCC is said to be attested _"in Nigeria"_, presumably meant to be Cameroon.                                                                                             |
+| Ugandan · Kenyan      | The "What is the GCC?" box gates the visa on the certificate being _"attested"_ but, unlike every other tab, never names the attesting authority. Left as written rather than assumed.                                                         |
+| Ugandan               | Stage durations sum to 17 working days (7 GCC + 7 visa + 3 flight) but the glance box says ~15 business days.                                                                                                                                  |
 | Filipina              | Tab title misspells Philippines as "Philipines".                                                                                                                                                                                               |
+| Indian Male ECR       | Written for a male worker, but the flight and exit-approval stages still say _"her"_/_"she"_. Fixed here by construction — pronouns interpolate from `{obj}`/`{subj}`.                                                                         |
+
+Fixed upstream in the current revision, recorded because they were previously flagged: the
+Kenyan and Cameroonian tabs no longer duplicate a stage number and no longer contradict their
+own headings (both now read 7 business days throughout), and the Cameroonian _"attested in
+Nigeria"_ line turned out to be deliberate — the tab now explains there is no UAE Embassy in
+Cameroon.
 
 Stage numbers are **renumbered sequentially for display** — a client-facing document must not
 show "02" twice. The document's own label is kept as `sourceLabel` and any mismatch is
