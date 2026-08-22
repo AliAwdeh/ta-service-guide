@@ -241,7 +241,9 @@ const GCC_NEEDS_ATTESTING =
 const GCC_GATES_THE_VISA = "The visa application can only be submitted once the GCC is attested.";
 
 /** "What is the GCC?" — the explainer box. `attested` adds the MOFA + UAE Embassy
-    sentence; the Ugandan and Kenyan tabs deliberately omit it (see DOC_ISSUES). */
+    sentence. Every tab that gates the visa on attestation names the authority, even
+    where the source doc leaves it out (Ugandan, Kenyan) — a client who is told the
+    GCC must be "attested" needs to know by whom. */
 const gccExplainer = (opts: { attested: boolean; extra?: string }): Callout => ({
   tone: "info",
   title: "What is the GCC?",
@@ -289,6 +291,11 @@ const parallelPreDeparture = (country: string): string =>
    their own headings (both now say 7 business days throughout), and the
    Cameroonian "attested in Nigeria" line turned out to be deliberate — the tab
    now explains there is no UAE Embassy in Cameroon.
+
+   Deliberate divergence from the source: the Ugandan and Kenyan tabs gate the visa
+   on the GCC being "attested" without naming the authority. We add the Ministry of
+   Foreign Affairs + UAE Embassy sentence anyway, so the attribution is consistent
+   across every nationality. Worth raising upstream so the doc matches.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export const DOC_ISSUES: { guide: ServiceGuide; issue: string }[] = [
@@ -310,21 +317,8 @@ export const DOC_ISSUES: { guide: ServiceGuide; issue: string }[] = [
   {
     guide: "ugandan",
     issue:
-      'The "What is the GCC?" box says the visa can only be submitted "once the GCC is ' +
-      'attested" but, unlike every other tab, never says by whom — the Ministry of Foreign ' +
-      "Affairs + UAE Embassy sentence is missing. Left as written rather than assumed.",
-  },
-  {
-    guide: "ugandan",
-    issue:
       "Stage durations sum to 17 working days (7 GCC + 7 visa + 3 flight) but the Timeline at " +
       "a Glance says ~15 business days.",
-  },
-  {
-    guide: "kenyan",
-    issue:
-      'Same as Ugandan: "once the GCC is attested" with no attesting authority named, while ' +
-      "the other tabs name the Ministry of Foreign Affairs and the UAE Embassy.",
   },
   {
     guide: "filipina-philippines",
@@ -750,14 +744,9 @@ const UGANDAN: GuideContent = {
       sourceLabel: "01",
       items: [...PASSPORT_AND_PHOTO, PLAIN_GCC_ITEM],
       callouts: [
-        // The Ugandan tab omits the MOFA + UAE Embassy sentence the other tabs
-        // carry, while still gating the visa on attestation. See DOC_ISSUES.
-        gccExplainer({ attested: false }),
+        gccExplainer({ attested: true }),
         gccOffer({ body: [weObtainIt("7 working days")] }),
       ],
-      docNote:
-        'The GCC box gates the visa on the certificate being "attested" but never names the ' +
-        "attesting authority, unlike every other tab.",
     }),
     {
       sourceLabel: "02",
@@ -1048,12 +1037,9 @@ const KENYAN: GuideContent = {
       sourceLabel: "01",
       items: [...PASSPORT_AND_PHOTO, PLAIN_GCC_ITEM],
       callouts: [
-        gccExplainer({ attested: false }),
+        gccExplainer({ attested: true }),
         gccOffer({ body: [weObtainIt("15 working days")] }),
       ],
-      docNote:
-        'The GCC box gates the visa on the certificate being "attested" but never names the ' +
-        "attesting authority, unlike every other tab.",
     }),
     {
       sourceLabel: "02",
