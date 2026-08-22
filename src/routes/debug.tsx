@@ -6,7 +6,7 @@ import { TokenGate } from "../components/token-gate";
 import {
   EMIRATES,
   LOCATIONS,
-  LOCATION_SPLIT_NATIONALITIES,
+  LOCATION_SENSITIVE_NATIONALITIES,
   NATIONALITIES,
   PACKAGES,
   PASSPORT_TYPES,
@@ -118,7 +118,7 @@ function Debug({ token, clear }: { token: string; clear: () => void }) {
   const required = useMemo(() => {
     if (mode === "pick" || f.pkg === "visa-only") return [] as string[];
     const out: string[] = [];
-    if (LOCATION_SPLIT_NATIONALITIES.includes(f.nationality) && !f.location) {
+    if (LOCATION_SENSITIVE_NATIONALITIES.includes(f.nationality) && !f.location) {
       out.push("MAID_LOCATION");
     }
     if (f.nationality === "indian") {

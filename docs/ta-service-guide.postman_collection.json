@@ -260,16 +260,47 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "guides"]
             },
-            "description": "",
+            "description": "MAID_LOCATION is REQUIRED for Sri Lankan: the guide covers the in-country process only, so \"outside-country\" resolves to the generic Other guide.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"CLIENT_ID\": 1008,\n  \"NATIONALITY\": \"Sri Lanka\"\n}",
+              "raw": "{\n  \"CLIENT_ID\": 1008,\n  \"NATIONALITY\": \"Sri Lanka\",\n  \"MAID_LOCATION\": \"in-country\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             }
+          }
+        },
+        {
+          "name": "Sri Lankan abroad -> Other guide",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "guides"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CLIENT_ID\": 1014,\n  \"NATIONALITY\": \"Sri Lanka\",\n  \"MAID_LOCATION\": \"outside-country\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "A Sri Lankan already outside Sri Lanka resolves to `other`. The Sri Lankan guide is written around the in-country process (local GCC, 38-day training, a development officer visiting her at home), none of which applies. Check resolved.serviceGuide."
           }
         },
         {

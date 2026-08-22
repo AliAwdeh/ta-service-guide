@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
    /admin/admin pages. Kept in sessionStorage (cleared when the tab closes) and
    sent as `Authorization: Bearer …` to the API. Never persisted to disk. */
 
-const KEY = "mvg_api_token";
+const KEY = "tasg_api_token";
 
 export function useApiToken() {
   const [token, setTokenState] = useState<string | null>(null);

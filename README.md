@@ -61,7 +61,8 @@ precedence first:
    handing over the visa, so the process is the same for everyone.
 2. **`NATIONALITY`** → picks the country guide. Unknown values map to `other` rather than
    erroring, so a new entry in the ERP's picklist never breaks a request.
-3. **`MAID_LOCATION`** → splits Ethiopian and Nepali into in-country / outside-country.
+3. **`MAID_LOCATION`** → splits Ethiopian and Nepali into in-country / outside-country, and
+   routes Filipina and Sri Lankan to `other` when the maid is already abroad.
 4. **`PASSPORT_TYPE` + `GENDER`** → splits Indian into ECNR / Male ECR / Female ECR.
 5. Anything unresolved → `other`.
 
@@ -87,13 +88,16 @@ The API returns `422` instead of guessing when a discriminator is load-bearing:
 
 This mirrors maid-visa-guide's `EID_APPLICATION_TYPE is required when EMIRATE is abu_dhabi`.
 
-### Combinations the document does not cover
+### In-country-only guides
 
-- **Filipina outside the Philippines** → falls back to `other`. The Filipina guide is written
-  end-to-end around the in-country process (Manila accommodation, TESDA, OWWA, OEC), none of
-  which applies to a maid already abroad. Worth confirming with the TA team.
-- **Sri Lankan / Ugandan / Kenyan / Cameroonian outside their home country** → the document
-  gives these one version each, so `MAID_LOCATION` is ignored for them.
+**Filipina** and **Sri Lankan** are written end-to-end around the process inside the home
+country — Manila accommodation, TESDA, OWWA and OEC for one; a local GCC, 38-day mandatory
+training and a development officer visiting her at home for the other. None of it applies to a
+maid already abroad, so `MAID_LOCATION: "outside-country"` routes both to the generic `other`
+guide, whose GCC country list covers the Philippines and Sri Lanka anyway.
+
+**Ugandan, Kenyan and Cameroonian** get one version each in the document (we obtain the attested
+GCC on her behalf either way), so `MAID_LOCATION` is accepted but ignored for them.
 
 ## Content lives in data, not components
 

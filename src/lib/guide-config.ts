@@ -166,21 +166,33 @@ export function resolveNationality(input: unknown): Nationality {
 /* --------------------------- location resolution -------------------------- */
 
 /**
- * Nationalities whose guide splits on where the maid currently is. For these,
- * MAID_LOCATION is required — the two versions differ by weeks of process
- * (an Ethiopian in Ethiopia runs a 39-day local GCC + 30-day pre-departure that
- * a maid already abroad skips entirely), so guessing would show a client the
- * wrong timeline.
+ * Nationalities whose guide depends on where the maid currently is, and for
+ * which MAID_LOCATION is therefore REQUIRED. Two different shapes of dependency
+ * live here, but the reason to demand the field is the same in both: the
+ * alternatives are weeks of process apart, or a different document entirely, so
+ * a guess shows the client the wrong guide.
+ *   • ethiopian / nepali — the document has an in-country and an outside-country
+ *     version, and the in-country one carries a local GCC and pre-departure
+ *     stages the other skips.
+ *   • filipino / sri-lankan — see IN_COUNTRY_ONLY below.
  */
-export const LOCATION_SPLIT_NATIONALITIES: readonly Nationality[] = ["ethiopian", "nepali"];
+export const LOCATION_SENSITIVE_NATIONALITIES: readonly Nationality[] = [
+  "filipino",
+  "ethiopian",
+  "sri-lankan",
+  "nepali",
+];
 
 /**
- * The Filipina guide is written end-to-end around the process INSIDE the
- * Philippines (partner agency in Manila, TESDA, OWWA, OEC). The document has no
- * counterpart for a Filipina already outside the Philippines, so that
- * combination falls back to the generic "other" guide — see README.
+ * Nationalities whose guide is written end-to-end around the process INSIDE the
+ * home country, with no counterpart in the document for a maid already abroad:
+ *   • Filipina — partner agency in Manila, TESDA, OWWA, OEC.
+ *   • Sri Lankan — local GCC, 38-day mandatory training, a development officer
+ *     visiting her at home.
+ * None of that applies to someone already outside, so those resolve to the
+ * generic "other" guide, whose GCC country list covers both nationalities.
  */
-const PHILIPPINES_ONLY: Nationality = "filipino";
+const IN_COUNTRY_ONLY: readonly Nationality[] = ["filipino", "sri-lankan"];
 
 /** Accepted spellings for "the maid is still in her home country" and its
     opposite. Country-specific phrasings ("in_ethiopia", "outside nepal") and
@@ -244,17 +256,23 @@ export function resolveServiceGuide(signals: {
   const nat = signals.nationality ?? "other";
   const loc = signals.location ?? null;
 
+  // 3. In-country-only guides: nothing in them applies to a maid already
+  //    abroad, so those clients get the generic guide. Handled ahead of the
+  //    switch so Filipina and Sri Lankan cannot drift apart.
+  if (IN_COUNTRY_ONLY.includes(nat) && loc === "outside-country") return "other";
+
   switch (nat) {
-    // 2 + 3. Location-split nationalities.
+    // 2 + 3. Nationalities with both an in-country and an outside-country guide.
     case "ethiopian":
       return loc === "outside-country" ? "ethiopian-outside-ethiopia" : "ethiopian-in-ethiopia";
     case "nepali":
       return loc === "outside-country" ? "nepali-outside-nepal" : "nepali-in-nepal";
 
-    // 3. Philippines-only: the guide describes the in-country process, so a
-    //    Filipina already abroad gets the generic guide instead.
-    case PHILIPPINES_ONLY:
-      return loc === "outside-country" ? "other" : "filipina-philippines";
+    // In-country guides. The outside-country case was returned above.
+    case "filipino":
+      return "filipina-philippines";
+    case "sri-lankan":
+      return "sri-lankan-in-sri-lanka";
 
     // 4. India splits on the passport's emigration-check status, and ECR
     //    additionally on gender (different visa route + extra clearance).
@@ -271,8 +289,6 @@ export function resolveServiceGuide(signals: {
     // 2. Single-guide nationalities. The document gives these one version each
     //    (we obtain the attested GCC on her behalf either way), so location
     //    does not change the guide.
-    case "sri-lankan":
-      return "sri-lankan-in-sri-lanka";
     case "ugandan":
       return "ugandan";
     case "kenyan":
@@ -476,12 +492,13 @@ export const GuideInputSchema = z
     (d) =>
       d.SERVICE_GUIDE != null ||
       d.PACKAGE === "visa-only" ||
-      !LOCATION_SPLIT_NATIONALITIES.includes(d.NATIONALITY) ||
+      !LOCATION_SENSITIVE_NATIONALITIES.includes(d.NATIONALITY) ||
       d.MAID_LOCATION != null,
     {
       message:
-        "MAID_LOCATION is required for Ethiopian and Nepali maids " +
-        '("in-country" or "outside-country") — the two guides describe different processes',
+        'MAID_LOCATION is required for Filipino, Ethiopian, Sri Lankan and Nepali maids ("in-country" ' +
+        'or "outside-country") — for these nationalities the location selects a different guide, so ' +
+        "it cannot be defaulted",
       path: ["MAID_LOCATION"],
     },
   )
@@ -556,7 +573,6 @@ export function guideDataFromInput(input: GuideInput): GuideData {
       }),
     pkg,
     nationality,
-    // Location is only meaningful for the nationalities that split on it.
     maidLocation: input.MAID_LOCATION ?? null,
     passportType: nationality === "indian" ? (input.PASSPORT_TYPE ?? null) : null,
     gender,
@@ -663,7 +679,7 @@ export function missingDiscriminators(row: {
   if (row.explicitGuide) return [];
   if (row.pkg === "visa-only") return [];
   const missing: string[] = [];
-  if (LOCATION_SPLIT_NATIONALITIES.includes(row.nationality) && row.maidLocation == null) {
+  if (LOCATION_SENSITIVE_NATIONALITIES.includes(row.nationality) && row.maidLocation == null) {
     missing.push(
       `MAID_LOCATION (required for ${row.nationality} — "in-country" or "outside-country")`,
     );
